@@ -1,4 +1,7 @@
 import React, { useState } from "react";
+import { api } from "@packages/backend/convex/_generated/api";
+import { useQuery } from "convex/react";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import {
   StyleSheet,
   Text,
@@ -12,10 +15,20 @@ import { RFValue } from "react-native-responsive-fontsize";
 
 const { width } = Dimensions.get("window");
 
-export default function InsideNoteScreen({ route, navigation }) {
-  const { item } = route.params;
-  console.log({ item });
-  const [activeTab, setActiveTab] = useState("original"); // State to manage active tab
+export default function InsideNoteScreen() {
+  const router = useRouter();
+  const { noteId } = useLocalSearchParams<{ noteId: string }>();
+  const note = useQuery(api.notes.getNote, {
+    id: noteId ?? undefined,
+  });
+  const [activeTab, setActiveTab] = useState("original");
+  const noteContentText = !note
+    ? "Note not found"
+    : activeTab === "original"
+      ? note.content
+      : note.summary
+        ? note.summary
+        : "No summary available";
 
   return (
     <View style={styles.container}>
@@ -27,14 +40,18 @@ export default function InsideNoteScreen({ route, navigation }) {
       </View>
 
       <View style={styles.underHeaderContainer}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
+        <TouchableOpacity
+          onPress={() => {
+            router.back();
+          }}
+        >
           <Image
             style={styles.arrowBack}
             source={require("../assets/icons/arrow-back.png")}
           />
         </TouchableOpacity>
 
-        <Text style={styles.title}>{item.title}</Text>
+        <Text style={styles.title}>{note?.title ?? "Note"}</Text>
         <TouchableOpacity></TouchableOpacity>
       </View>
 
@@ -43,13 +60,7 @@ export default function InsideNoteScreen({ route, navigation }) {
         contentContainerStyle={{ paddingBottom: 100 }}
       >
         <View style={styles.contentContainer}>
-          <Text style={styles.contentDescription}>
-            {activeTab === "original"
-              ? item.content
-              : item.summary
-                ? item.summary
-                : "No summary available"}
-          </Text>
+          <Text style={styles.contentDescription}>{noteContentText}</Text>
         </View>
       </ScrollView>
 
