@@ -26,6 +26,7 @@ export const getNotes = query({
     return await ctx.db
       .query("notes")
       .withIndex("by_userId", (q) => q.eq("userId", userId))
+      .order("desc")
       .take(100);
   },
 });
@@ -33,16 +34,19 @@ export const getNotes = query({
 // Get note for a specific note
 export const getNote = query({
   args: {
-    id: v.optional(v.id("notes")),
+    id: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const { id } = args;
     if (!id) return null;
 
+    const normalizedId = ctx.db.normalizeId("notes", id);
+    if (!normalizedId) return null;
+
     const userId = await getUserId(ctx);
     if (!userId) return null;
 
-    const note = await ctx.db.get(id);
+    const note = await ctx.db.get(normalizedId);
     if (!note || note.userId !== userId) return null;
 
     return note;

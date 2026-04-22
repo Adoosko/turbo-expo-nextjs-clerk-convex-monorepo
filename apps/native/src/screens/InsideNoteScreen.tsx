@@ -1,6 +1,5 @@
 import React, { useState } from "react";
 import { api } from "@packages/backend/convex/_generated/api";
-import { type Id } from "@packages/backend/convex/_generated/dataModel";
 import { useQuery } from "convex/react";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import {
@@ -20,7 +19,7 @@ export default function InsideNoteScreen() {
   const router = useRouter();
   const { noteId } = useLocalSearchParams<{ noteId: string }>();
   const note = useQuery(api.notes.getNote, {
-    id: noteId ? (noteId as Id<"notes">) : undefined,
+    id: noteId ?? undefined,
   });
   const [activeTab, setActiveTab] = useState("original");
 
