@@ -26,7 +26,7 @@ export const getNotes = query({
     return await ctx.db
       .query("notes")
       .withIndex("by_userId", (q) => q.eq("userId", userId))
-      .collect();
+      .take(100);
   },
 });
 
