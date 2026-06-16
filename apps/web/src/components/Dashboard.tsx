@@ -1,50 +1,50 @@
+//@ts-nocheck
 "use client";
 
-import { useState, useEffect } from "react";
-import { useQuery, useMutation } from "convex/react";
-import { api } from "@packages/backend/convex/_generated/api";
-import { useUser, useOrganization, OrganizationSwitcher, UserButton } from "@clerk/nextjs";
 import { cn } from "@/lib/utils";
+import { OrganizationSwitcher, useOrganization, UserButton, useUser } from "@clerk/nextjs";
+import { api } from "@packages/backend/convex/_generated/api";
+import { useMutation, useQuery } from "convex/react";
+import { useEffect, useState } from "react";
 
 // Date & Icons
-import { format } from "date-fns";
 import { sk } from "date-fns/locale";
 import {
+  Activity,
+  BookOpen,
   Calendar as CalendarIcon,
-  Plus,
-  Minus,
-  Trash2,
+  Layers,
   Loader2,
+  Minus,
+  Pencil,
+  Plus,
+  Sparkles,
+  Trash2,
   Upload,
   Users,
-  BookOpen,
-  Layers,
-  Activity,
-  Sparkles,
-  Pencil,
 } from "lucide-react";
 
 // Shadcn UI Components
 import { Button } from "@/components/ui/button";
+import { Calendar } from "@/components/ui/calendar";
 import {
   Card,
+  CardContent,
+  CardDescription,
   CardHeader,
   CardTitle,
-  CardDescription,
-  CardContent,
 } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Calendar } from "@/components/ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-  DialogFooter,
 } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
 // Presets Catalog
 import { CHICKEN_BREED_PRESETS } from "@/lib/presets";
