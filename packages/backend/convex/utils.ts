@@ -1,3 +1,10 @@
+import { type UserIdentity } from "convex/server";
+
+export function getOrgId(identity: UserIdentity | null): string | undefined {
+  if (!identity) return undefined;
+  return (identity as any).org_id ?? (identity as any).o?.id;
+}
+
 export function missingEnvVariableUrl(envVarName: string, whereToGet: string) {
   const deployment = deploymentName();
   if (!deployment) return `Missing ${envVarName} in environment variables.`;

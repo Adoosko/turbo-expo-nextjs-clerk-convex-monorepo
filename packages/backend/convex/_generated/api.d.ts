@@ -8,8 +8,9 @@
  * @module
  */
 
-import type * as notes from "../notes.js";
-import type * as openai from "../openai.js";
+import type * as chickens from "../chickens.js";
+import type * as entries from "../entries.js";
+import type * as modules from "../modules.js";
 import type * as utils from "../utils.js";
 
 import type {
@@ -19,8 +20,9 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
-  notes: typeof notes;
-  openai: typeof openai;
+  chickens: typeof chickens;
+  entries: typeof entries;
+  modules: typeof modules;
   utils: typeof utils;
 }>;
 

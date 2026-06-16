@@ -1,76 +1,99 @@
-@import 'tailwindcss';
+@import "tailwindcss";
+
+:root {
+  /* Refined Premium Color Palette (Warm Linen & Forest Sage) */
+  --bg-base: #F5F3ED; /* Serene warm linen */
+  --bg-surface: #FFFFFF; /* Pure paper white */
+  --bg-surface-raised: #EAE6DB; /* Pressed state */
+  --text-primary: #232824; /* Rich charcoal with green undertone */
+  --text-muted: #79827B; /* Soft taupe-green */
+  --accent-primary: #2C4E3A; /* Deep organic forest sage */
+  --accent-warm: #CD7F32; /* Honey-amber gold */
+  --accent-light: #E5EDE8; /* Matcha-milk shade */
+  --border-default: #E6E4DC; /* Minimal separator line */
+  --border-strong: #CFCBC0; /* Form focus boundaries */
+  --state-error: #A83A3A;
+  --state-success: #2C4E3A;
+  --state-offline: #CD7F32;
+
+  /* Shadcn Variables Mapping */
+  --background: var(--bg-base);
+  --foreground: var(--text-primary);
+  --card: var(--bg-surface);
+  --card-foreground: var(--text-primary);
+  --popover: var(--bg-surface);
+  --popover-foreground: var(--text-primary);
+  --primary: var(--accent-primary);
+  --primary-foreground: #FFFFFF;
+  --secondary: var(--accent-light);
+  --secondary-foreground: var(--accent-primary);
+  --muted: var(--bg-surface-raised);
+  --muted-foreground: var(--text-muted);
+  --accent: var(--bg-surface-raised);
+  --accent-foreground: var(--text-primary);
+  --destructive: var(--state-error);
+  --destructive-foreground: #FFFFFF;
+  --border: var(--border-strong); /* Set default borders for shadcn components */
+  --input: var(--border-strong);
+  --ring: var(--accent-primary);
+  --radius: 1.25rem; /* Larger, smoother rounded corners */
+}
 
 @theme {
-  --breakpoint-*: initial;
-  --breakpoint-sm: 640px;
-  --breakpoint-md: 768px;
-  --breakpoint-lg: 1024px;
-  --breakpoint-xl: 1440px;
+  /* Design System Colors */
+  --color-bg-base: var(--bg-base);
+  --color-bg-surface: var(--bg-surface);
+  --color-bg-surface-raised: var(--bg-surface-raised);
+  --color-text-primary: var(--text-primary);
+  --color-text-muted: var(--text-muted);
+  --color-accent-primary: var(--accent-primary);
+  --color-accent-warm: var(--accent-warm);
+  --color-accent-light: var(--accent-light);
+  --color-border-default: var(--border-default);
+  --color-border-strong: var(--border-strong);
+  --color-state-error: var(--state-error);
+  --color-state-success: var(--state-success);
+  --color-state-offline: var(--state-offline);
 
-  --color-primary: #0d87e1;
+  /* Shadcn Theme Mappings */
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--color-border-strong);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
 
-  --font-inter: Inter, sans-serif;
-  --font-lato: Lato, sans-serif;
-  --font-montserrat: Montserrat, sans-serif;
-
-  --background-image-gradient-radial: radial-gradient(var(--tw-gradient-stops));
-  --background-image-gradient-conic: conic-gradient(
-    from 180deg at 50% 50%,
-    var(--tw-gradient-stops)
-  );
+  /* Font Families */
+  --font-inter: var(--font-inter), sans-serif;
+  --font-nunito: var(--font-nunito), sans-serif;
 }
 
-@utility container {
-  margin-inline: auto;
-}
-
-/*
-  The default border color has changed to `currentcolor` in Tailwind CSS v4,
-  so we've added these compatibility styles to make sure everything still
-  looks the same as it did with Tailwind CSS v3.
-
-  If we ever want to remove these styles, we need to add an explicit border
-  color utility to any element that depends on these defaults.
-*/
 @layer base {
-  *,
-  ::after,
-  ::before,
-  ::backdrop,
-  ::file-selector-button {
-    border-color: var(--color-gray-200, currentcolor);
+  body {
+    background-color: var(--bg-base);
+    color: var(--text-primary);
+    font-family: var(--font-inter), sans-serif;
   }
 }
 
-.linear_gradient {
-  background: linear-gradient(
-    267deg,
-    #fff -9.43%,
-    #040218 -9.42%,
-    #fff 4.63%,
-    #d2e4f2 127.55%
-  );
+@utility scrollbar-none {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
 }
 
-.bg_image {
-  background:
-    linear-gradient(
-      181deg,
-      rgba(255, 255, 255, 0) 57.92%,
-      #fff 97.09%,
-      rgba(255, 255, 255, 0) 127.09%
-    ),
-    url("/images/background.png"),
-    lightgray 0% 0% / 261.2499952316284px 261.2499952316284px repeat;
-}
-.button {
-  border-radius: 8px;
-  background: linear-gradient(
-    267deg,
-    #0983df -9.43%,
-    #040218 -9.42%,
-    #0d87e1 4.63%,
-    #0983df 127.55%
-  );
-  box-shadow: 0px 4px 4px 0px rgba(0, 0, 0, 0.25);
-}

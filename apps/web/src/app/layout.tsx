@@ -1,17 +1,24 @@
 import type { Metadata } from "next";
 import { ClerkProvider } from "@clerk/nextjs";
-import { Inter, Montserrat, Lato } from "next/font/google";
+import { Inter, Nunito } from "next/font/google";
 import { cn } from "@/lib/utils";
 import "./globals.css";
 import ConvexClientProvider from "./ConvexClientProvider";
 
-const inter = Inter({ subsets: ["latin"] });
-const montserrat = Montserrat({ subsets: ["latin"] });
-const lato = Lato({ weight: "400", subsets: ["latin"] });
+const inter = Inter({
+  subsets: ["latin"],
+  variable: "--font-inter",
+});
+
+const nunito = Nunito({
+  subsets: ["latin"],
+  variable: "--font-nunito",
+  weight: ["800"],
+});
 
 export const metadata: Metadata = {
-  title: "Notes App",
-  description: "This is an app to take notes.",
+  title: "Finik Farma",
+  description: "Osobná aplikácia na sledovanie hospodárstva a záhrady pre rodinu Finik.",
 };
 
 export default function RootLayout({
@@ -20,9 +27,13 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
+    <html lang="sk">
       <body
-        className={cn(inter.className, montserrat.className, lato.className)}
+        className={cn(
+          inter.variable,
+          nunito.variable,
+          "bg-bg-base text-text-primary font-inter antialiased min-h-screen"
+        )}
       >
         <ClerkProvider>
           <ConvexClientProvider>{children}</ConvexClientProvider>
@@ -31,3 +42,4 @@ export default function RootLayout({
     </html>
   );
 }
+
