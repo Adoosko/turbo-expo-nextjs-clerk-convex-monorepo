@@ -5,7 +5,13 @@
   "tasks": {
     "build": {
       "outputs": ["dist/**", ".next/**", "!.next/cache/**"],
-      "dependsOn": ["^build"]
+      "dependsOn": ["^build"],
+      "env": [
+        "CLERK_SECRET_KEY",
+        "CONVEX_DEPLOY_KEY",
+        "NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY",
+        "NEXT_PUBLIC_CONVEX_URL"
+      ]
     },
     "dev": {
       "cache": false,
