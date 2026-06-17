@@ -269,15 +269,15 @@ export default function Dashboard({ orgId, orgName }: DashboardProps) {
 
   return (
     <div className="min-h-screen bg-bg-base font-inter pb-32 selection:bg-accent-light selection:text-accent-primary animate-fade-in">
-      {/* Sticky Header - Borderless Glassmorphism */}
-      <header className="sticky top-0 z-30 w-full bg-bg-surface/80 backdrop-blur-md">
-        <div className="mx-auto max-w-3xl px-4 h-16 flex items-center justify-between">
+      {/* Floating Sticky Header - Rounded, Fat & Modern */}
+      <div className="w-full sticky top-3 sm:top-4 z-30 px-3 sm:px-0">
+        <header className="mx-auto max-w-3xl bg-bg-surface/90 backdrop-blur-md rounded-2xl py-3 px-4 sm:px-5 flex items-center justify-between h-18 border-none">
           <div className="flex items-center gap-2">
-            <div className="h-6 w-6 rounded-md bg-accent-primary flex items-center justify-center text-white">
+            <div className="h-8 w-8 rounded-xl bg-accent-primary flex items-center justify-center text-white">
               <svg
                 xmlns="http://www.w3.org/2000/svg"
-                width="14"
-                height="14"
+                width="16"
+                height="16"
                 viewBox="0 0 24 24"
                 fill="none"
                 stroke="currentColor"
@@ -290,7 +290,7 @@ export default function Dashboard({ orgId, orgName }: DashboardProps) {
                 <path d="m14 14 2-2-2-2" />
               </svg>
             </div>
-            <span className="font-nunito text-lg font-bold tracking-tight text-text-primary hidden sm:inline-block">
+            <span className="font-nunito text-xl font-bold tracking-tight text-text-primary hidden sm:inline-block">
               Finik Farma
             </span>
           </div>
@@ -303,14 +303,14 @@ export default function Dashboard({ orgId, orgName }: DashboardProps) {
                 elements: {
                   rootBox: "flex items-center max-w-[140px] sm:max-w-none",
                   organizationSwitcherTrigger:
-                    "border-0 rounded-xl px-3.5 py-1.5 bg-bg-surface hover:bg-bg-surface-raised transition text-text-primary font-semibold text-sm truncate max-w-full",
+                    "border-0 rounded-xl px-3.5 py-1.5 bg-bg-base/60 hover:bg-bg-base transition text-text-primary font-semibold text-sm truncate max-w-full",
                 },
               }}
             />
             <UserButton />
           </div>
-        </div>
-      </header>
+        </header>
+      </div>
 
       {/* Main Content */}
       <main className="mx-auto max-w-3xl px-4 mt-6 flex flex-col gap-6">
@@ -324,8 +324,8 @@ export default function Dashboard({ orgId, orgName }: DashboardProps) {
           </p>
         </div>
 
-        {/* Navigation Tabs Header */}
-        <div className="flex border-b border-border-default/20 gap-5 sm:gap-6 mb-2 overflow-x-auto scrollbar-none -mx-4 px-4 flex-nowrap shrink-0">
+        {/* Navigation Tabs Header - Capsule / Pill Style */}
+        <div className="bg-bg-surface p-1.5 rounded-2xl flex gap-1.5 overflow-x-auto scrollbar-none flex-nowrap shrink-0">
           {[
             { id: "prehlad", label: "Prehľad", icon: Activity },
             { id: "hejno", label: "Hejno", icon: Layers },
@@ -339,10 +339,10 @@ export default function Dashboard({ orgId, orgName }: DashboardProps) {
                 key={tab.id}
                 onClick={() => setCurrentTab(tab.id as any)}
                 className={cn(
-                  "flex items-center gap-2 pb-3 pt-1 text-base font-medium border-b-2 transition-all duration-150 relative border-transparent whitespace-nowrap shrink-0 cursor-pointer",
+                  "flex-1 flex items-center justify-center gap-2.5 px-5 py-3 rounded-xl text-base font-semibold transition-all duration-200 whitespace-nowrap shrink-0 cursor-pointer border-none",
                   active
-                    ? "border-accent-primary text-accent-primary"
-                    : "text-text-muted hover:text-text-primary"
+                    ? "bg-accent-primary text-white"
+                    : "text-text-muted hover:text-text-primary hover:bg-bg-base/50"
                 )}
               >
                 <Icon className="h-5 w-5 shrink-0" />
