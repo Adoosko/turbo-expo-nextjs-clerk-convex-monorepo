@@ -20,6 +20,7 @@ import EditEntryDialog from "./dashboard/EditEntryDialog";
 import HejnoTab from "./dashboard/HejnoTab";
 import PrehladTab from "./dashboard/PrehladTab";
 import RodinaTab from "./dashboard/RodinaTab";
+import Logo from "./common/Logo";
 
 interface DashboardProps {
   orgId: string;
@@ -272,28 +273,7 @@ export default function Dashboard({ orgId, orgName }: DashboardProps) {
       {/* Floating Sticky Header - Rounded, Fat & Modern */}
       <div className="w-full sticky top-3 sm:top-4 z-30 px-3 sm:px-0">
         <header className="mx-auto max-w-3xl bg-bg-surface/90 backdrop-blur-md rounded-2xl py-3 px-4 sm:px-5 flex items-center justify-between h-18 border-none">
-          <div className="flex items-center gap-2">
-            <div className="h-8 w-8 rounded-xl bg-accent-primary flex items-center justify-center text-white">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="3"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z" />
-                <path d="m10 10-2 2 2 2" />
-                <path d="m14 14 2-2-2-2" />
-              </svg>
-            </div>
-            <span className="font-nunito text-xl font-bold tracking-tight text-text-primary hidden sm:inline-block">
-              Finik Farma
-            </span>
-          </div>
+          <Logo />
           <div className="flex items-center gap-3.5">
             <OrganizationSwitcher
               hidePersonal={true}
