@@ -325,7 +325,7 @@ export default function Dashboard({ orgId, orgName }: DashboardProps) {
         </div>
 
         {/* Navigation Tabs Header - Capsule / Pill Style */}
-        <div className="bg-bg-surface p-1.5 rounded-2xl flex gap-1.5 overflow-x-auto scrollbar-none flex-nowrap shrink-0">
+        <div className="bg-bg-surface p-1 rounded-2xl flex gap-1.5 overflow-x-auto scrollbar-none flex-nowrap shrink-0">
           {[
             { id: "prehlad", label: "Prehľad", icon: Activity },
             { id: "hejno", label: "Hejno", icon: Layers },
@@ -339,13 +339,13 @@ export default function Dashboard({ orgId, orgName }: DashboardProps) {
                 key={tab.id}
                 onClick={() => setCurrentTab(tab.id as any)}
                 className={cn(
-                  "flex-1 flex items-center justify-center gap-2.5 px-5 py-3 rounded-xl text-base font-semibold transition-all duration-200 whitespace-nowrap shrink-0 cursor-pointer border-none",
+                  "flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-200 whitespace-nowrap shrink-0 cursor-pointer border-none",
                   active
                     ? "bg-accent-primary text-white"
                     : "text-text-muted hover:text-text-primary hover:bg-bg-base/50"
                 )}
               >
-                <Icon className="h-5 w-5 shrink-0" />
+                <Icon className="h-4.5 w-4.5 shrink-0" />
                 {tab.label}
               </button>
             );
