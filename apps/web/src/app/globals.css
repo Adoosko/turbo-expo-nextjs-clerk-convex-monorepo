@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@plugin "tailwindcss-animate";
 
 :root {
   /* Refined Premium Color Palette (Warm Linen & Forest Sage) */
@@ -33,7 +34,7 @@
   --accent-foreground: var(--text-primary);
   --destructive: var(--state-error);
   --destructive-foreground: #FFFFFF;
-  --border: var(--border-strong); /* Set default borders for shadcn components */
+  --border: var(--border-strong);
   --input: var(--border-strong);
   --ring: var(--accent-primary);
   --radius: 1.25rem; /* Larger, smoother rounded corners */
@@ -72,13 +73,18 @@
   --color-accent-foreground: var(--accent-foreground);
   --color-destructive: var(--destructive);
   --color-destructive-foreground: var(--destructive-foreground);
-  --color-border: var(--color-border-strong);
+  --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
 
   /* Font Families */
   --font-inter: var(--font-inter), sans-serif;
   --font-nunito: var(--font-nunito), sans-serif;
+
+  /* Radius for shadcn */
+  --radius-lg: var(--radius);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-sm: calc(var(--radius) - 4px);
 }
 
 @layer base {
@@ -96,4 +102,3 @@
     display: none;
   }
 }
-

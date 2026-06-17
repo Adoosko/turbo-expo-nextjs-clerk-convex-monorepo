@@ -24,13 +24,14 @@ Implementovať mobilnú aplikáciu (Expo) so zdieľanou Convex integráciou, off
 - **Webový Dashboard (Next.js)** — Napojená autorizácia a prepínanie fariem cez Clerk `<OrganizationSwitcher />` a `<UserButton />`. Implementovaný úvodný onboarding (výzva k výberu/vytvoreniu farmy v slovenčine) a hlavný dashboard s widgetom pre stepper záznam vajec a zoznamom posledných záznamov.
 - **Prehľad, Hejno, Denník, Rodina Tabs** — Prepracované používateľské prostredie do premium plochého plochého designu s 4 hlavnými kartami.
 - **Hejno (Chicken Flock)** — Zavedený statický slovenský katalóg 8 prednastavených plemien s Unsplash obrázkami a popismi (`presets.ts`). Pridaná možnosť vytvárať vlastné plemená, vyberať ich farebné označenie a nahrávať vlastné fotky priamo cez Convex Storage (`generateUploadUrl`). Pridané tlačidlo **"Vytvoriť predvolené hejno" (7ks)** pre zrýchlený štart a onboarding prázdneho kurníka.
-- **Flock Overview & Productivity** — Na karte Prehľad pribudla nová karta **Stav hejna** so zoznamom plemien a ich počtom. V hlavnej štatistike sa automaticky vypočítava **znáška na nosnicu** (pomer počtu dnešných vajec a sliepok, vylučujúc kohútov) vrátane percentuálnej a desatinnej efektívnosti.
-- **Denník (Chronological Logs)** — Rozšírená tabuľková vizualizácia s možnosťou trvalého vymazania záznamov z denníka s bezpečnostným potvrdením.
-- **Denník Redesign (2026-06-16)** — Kompletne prepracované UI denníka: 3 sumárne štatistické karty (celkový počet vajec, priemer/deň, rekord farmy), riadky nahradené CSS-grid layoutom s ikonou vajca vedľa počtu, farebný progress bar (zelená/jantárová/šedá podľa % maxima), hover-reveal tlačidlo vymazania, badge „Dnes" pri aktuálnom zázname, TrendingUp ikona pri rekordnom dni, a footer s počtom záznamov. Prázdny stav má vlastnú SVG ilustráciu vajca.
-- **Rodina (Family)** — Úplná integrácia Clerk `<OrganizationProfile />` na karte Rodina pre plynulú správu členov a pozvánky do farmy.
+- **Flock Overview & Productivity (2026-06-17)** — Na karte Prehľad pribudla nová sekcia **Stav hejna** so stohovaným grafom zloženia a zoznamom plemien. Nahradili sme jednoduché farebné krúžky v zozname plemien skutočnými okrúhlymi fotkami plemien (s farebným lemom prislúchajúcim danému plemenu pre prepojenie s grafom).
+- **Denník Logger Avatar, Responzívnosť & Sticky Header (2026-06-17)** — Nahradili sme textový štítok „Vy / Rodina“ v denníku skutočnými profilovými fotkami (avatarmi) členov rodiny, ktorí záznam vytvorili. Aby sme predišli prekrývaniu a zväčšovaniu kariet, zachovali sme jednoradkový layout a skrátili formát dátumu na mobiloch na ultra-kompaktný numerický tvar (napr. „17.6.“ namiesto „17. júna 2026“) spoločne s optimalizáciou paddingov, čím sme dosiahli dokonalú prispôsobivosť. Taktiež sme opravili lepkavé (sticky) hlavičky mesiacov zvýšením z-indexu na `z-20` a nastavením pevného pozadia `bg-bg-base`, aby sa záznamy pri posúvaní nesprávne neprekrývali.
+- **Rodina (Family)** — Nahradený defaultný Clerk `<OrganizationProfile />` vlastným prehľadným zoznamom členov s ich profilovými fotkami/avatarmi, menami, e-mailami a rolami (Správca vs. Člen).
 - **Prístupnosť a responzívnosť (Accessibility & Responsiveness)** — Zväčšili sme písmo (odstránenie mikro-textov pod `text-xs`/`text-sm`, zväčšenie textu na `text-base`/`text-lg`/`text-xl`) a ovládacie prvky (steppre `w-10 h-10` s `h-5 w-5` ikonami, tlačidlá s výškou `h-12`) pre starších používateľov. Navigačné taby sa na mobiloch posúvajú horizontálne bez zalamovania, a tabuľka denníka na mobiloch skrýva vedľajšie stĺpce, čím sme dosiahli perfektný vzhľad na 320px displejoch (iPhone SE).
-- **Vizualizácie a grafika (Visualizations & Graphics)** — Pridali sme interaktívny ukazovateľ priemerného výkonu znášky na sliepku (Laying Productivity Gauge) a stohovaný farebný distribučný graf plemien (Flock Distribution Bar) v novom paneli **Stav hejna** na karte Prehľad s plnohodnotným slovakizovaným skloňovaním. V tabuľke denníka sme doplnili miniatúrne vizuálne stĺpce porovnávajúce denný výkon s historickým maximom farmy.
+- **Vizualizácie a grafika (Visualizations & Graphics)** — Pridali sme interaktívny ukazovateľ priemerného výkonu znášky na sliepku (Laying Productivity Gauge) a stohovaný farebný distribučný graf plemien (Flock Distribution Bar) v novom paneli **Stav hejna** na karte Prehľad s plnohodnotným slovakizovaným skloňovaním.
 - **Lokálne assety (Local Assets)** — Aktualizovali sme prednastavený obrázok pre kohúta v `presets.ts` na novú lokálnu verziu `/chickens/leghorn-kohut.png` uloženú používateľom.
+- **Kalendár znášky (2026-06-17)** — Prepracovali sme mesačný kalendár znášky v Prehľade do podoby jednotnej a čistej mriežky (`w-full aspect-square`). Všetky políčka majú teraz rovnakú veľkosť bez ohľadu na obsah, čo odstraňuje vertikálne preťahovanie riadkov. Prázdne dni majú jemné neutrálne pozadie `bg-bg-base/40` na vytvorenie vizuálnej mriežky, zapísané dni majú svetlozelené pozadie `bg-accent-light/45` a vybrané dni sú zvýraznené plným zeleným blokom `bg-accent-primary` s bielym textom. Odstránili sme zbytočné ohraničenia (borders) v súlade s plochým dizajnom a zjemnili rezy písma.
+- **Dashboard UI/UX & Refaktoring (2026-06-17)** — Odstránili sme Laying Productivity Gauge z karty Prehľad. Pridali sme interaktívny mesačný kalendár znášky v Prehľade. Presunuli sme formulár na zápis znášky priamo pod Hero kartu pre lepsie prístupnosť na mobiloch. Nahradili sme presmerovanie pri úprave záznamu priamym editovacím dialógom v denníku. Zoznam v denníku sme zoskupili podľa mesiacov a týždňov s jasnými predelmi a pridali sme filter podľa mesiacov a full-text vyhľadávanie v poznámkach. Celý veľký komponent `Dashboard.tsx` (~1860 riadkov) sme refaktorovali do 8 samostatných pod-komponentov v adresári `src/components/dashboard` pre lepšiu udržateľnosť a vyriešili chyby s neuzatvorenými JSX tagmi.
 
 ## V procese (In Progress)
 
@@ -45,7 +46,7 @@ Implementovať mobilnú aplikáciu (Expo) so zdieľanou Convex integráciou, off
 
 - Má pozývací kód exspirovary? → Vyriešené prechodom na Clerk (riadi Clerk).
 - Je jedna farma per používateľský účet tvrdé pravidlo? → Clerk prepínač umožňuje viacero fariem, čo prekonáva pôvodné MVP obmedzenie a dáva rodine flexibilitu.
-- Majú offline záznamy v histórii native appky svietiť okamžite (optimisticky) pred synchronizáciou, alebo až po potvrdení? → Tendencia k optimistickému zobrazeniu; potvrdíme pri implementácii.
+- Majú offline záznamy v histórii native appky svietiť okamžite (optimisticky) pred synchronizáciou, eller až po potvrdení? → Tendencia k optimistickému zobrazeniu; potvrdíme pri implementácii.
 
 ## Architektonické rozhodnutia (Architecture Decisions)
 
@@ -61,6 +62,11 @@ Implementovať mobilnú aplikáciu (Expo) so zdieľanou Convex integráciou, off
 - Opravená chyba autorizácie (Unauthorized to access this farm): Clerk v predvolenej Convex šablóne komprimuje claims do objektu `identity.o.id` (namiesto `identity.org_id`). Pridaný helper `getOrgId` v `utils.ts` na spoľahlivú extrakciu orgId v oboch tvaroch.
 - Optimalizácia pre iPhone SE: pridaná podpora pre horizontálne posúvanie tabov bez zalamovania a zavedená `@utility scrollbar-none` v Tailwind v4 na skrytie scrollbarov.
 - Zväčšenie rozloženia: steppre boli upravené na `w-10 h-10` a tabuľky optimalizované so skrytými vedľajšími stĺpcami na mobiloch na zväčšenie textového obsahu.
+- Pridané vizuálne grafiky a stav hejna:
+  - Laying Productivity Gauge: `Math.round((todayValue / totalHens) * 100)` s plynulým progress barom.
+  - Flock Distribution Bar: stohovaný bar v novej karte **Stav hejna** so skloňovaním (napr. `sliepka`, `sliepky`, `sliepok`).
+- Skrátený dátum v Denníku: pridaná funkcia `formatDateSlovakShort` pre odľahčenie tabuľkového výpisu.
+na zväčšenie textového obsahu.
 - Pridané vizuálne grafiky a stav hejna:
   - Laying Productivity Gauge: `Math.round((todayValue / totalHens) * 100)` s plynulým progress barom.
   - Flock Distribution Bar: stohovaný bar v novej karte **Stav hejna** so skloňovaním (napr. `sliepka`, `sliepky`, `sliepok`).
