@@ -30,6 +30,8 @@ interface AddChickenDialogProps {
   setNotesInput: (val: string) => void;
   isSavingChicken: boolean;
   onSubmit: (e: React.FormEvent) => void;
+  hatchedDateInput: string;
+  setHatchedDateInput: (val: string) => void;
 }
 
 export default function AddChickenDialog({
@@ -49,6 +51,8 @@ export default function AddChickenDialog({
   setNotesInput,
   isSavingChicken,
   onSubmit,
+  hatchedDateInput,
+  setHatchedDateInput,
 }: AddChickenDialogProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -178,6 +182,22 @@ export default function AddChickenDialog({
                 </div>
               </div>
             </>
+          )}
+
+          {/* Hatch Date (Only for Kuriatko) */}
+          {selectedBreedPreset === "kuriatko" && (
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-medium text-text-muted uppercase tracking-wider">
+                Dátum vyliahnutia
+              </label>
+              <Input
+                type="date"
+                value={hatchedDateInput}
+                onChange={(e) => setHatchedDateInput(e.target.value)}
+                className="bg-bg-base/60 rounded-xl px-4 py-2.5 text-base text-text-primary focus:ring-1 focus:ring-accent-primary h-12 font-normal"
+                required
+              />
+            </div>
           )}
 
           {/* Count */}

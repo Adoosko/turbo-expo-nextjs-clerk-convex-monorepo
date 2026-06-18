@@ -29,5 +29,6 @@ export default defineSchema({
     notes: v.optional(v.string()),
     storageId: v.optional(v.string()), // Convex storage ID for custom photo
     presetId: v.optional(v.string()),  // Preset ID if standard breed
+    hatchedDate: v.optional(v.string()), // YYYY-MM-DD
   }).index("by_orgId", ["orgId"]),
 });

@@ -14,6 +14,10 @@ import {
   getChickenDetails,
   getSlovakPluralHens,
   getSlovakPluralRoosters,
+  getSlovakPluralChicks,
+  getSlovakPluralDucks,
+  formatChicksAge,
+  getExpectedLayingDate,
 } from "./utils";
 
 interface PrehladTabProps {
@@ -57,10 +61,16 @@ export default function PrehladTab({
   // Calculations
   const totalChickens = chickens ? chickens.reduce((sum, c) => sum + (c.count || 0), 0) : 0;
   const totalHens = chickens
-    ? chickens.filter((c) => c.presetId !== "kohut").reduce((sum, c) => sum + (c.count || 0), 0)
+    ? chickens.filter((c) => c.presetId !== "kohut" && c.presetId !== "kuriatko" && c.presetId !== "kacka_diva").reduce((sum, c) => sum + (c.count || 0), 0)
     : 0;
   const totalRoosters = chickens
     ? chickens.filter((c) => c.presetId === "kohut").reduce((sum, c) => sum + (c.count || 0), 0)
+    : 0;
+  const totalChicks = chickens
+    ? chickens.filter((c) => c.presetId === "kuriatko").reduce((sum, c) => sum + (c.count || 0), 0)
+    : 0;
+  const totalDucks = chickens
+    ? chickens.filter((c) => c.presetId === "kacka_diva").reduce((sum, c) => sum + (c.count || 0), 0)
     : 0;
   const activeBreeds = chickens ? chickens.filter((c) => (c.count || 0) > 0) : [];
 
@@ -363,7 +373,7 @@ export default function PrehladTab({
                     <span className="font-nunito text-xl font-bold text-accent-primary">
                       {totalChickens} ks{" "}
                       <span className="text-xs font-medium font-inter text-text-muted">
-                        ({getSlovakPluralHens(totalHens)}, {getSlovakPluralRoosters(totalRoosters)})
+                        ({getSlovakPluralHens(totalHens)}, {getSlovakPluralRoosters(totalRoosters)}, {getSlovakPluralChicks(totalChicks)}, {getSlovakPluralDucks(totalDucks)})
                       </span>
                     </span>
                   </div>
@@ -403,6 +413,11 @@ export default function PrehladTab({
                             style={{ borderColor: info.color }}
                           />
                           <span>{info.name}</span>
+                          {breed.presetId === "kuriatko" && breed.hatchedDate && (
+                            <span className="text-[10px] text-text-muted font-normal">
+                              ({formatChicksAge(breed.hatchedDate)}, predpoklad znášky: {getExpectedLayingDate(breed.hatchedDate)})
+                            </span>
+                          )}
                           <span className="font-semibold text-accent-primary ml-0.5">
                              {breed.count} ks
                           </span>

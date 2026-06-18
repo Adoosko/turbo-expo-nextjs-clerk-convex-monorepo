@@ -83,10 +83,12 @@ export default function Dashboard({ orgId, orgName }: DashboardProps) {
   const [notesInput, setNotesInput] = useState("");
   const [uploadFile, setUploadFile] = useState<File | null>(null);
   const [isSavingChicken, setIsSavingChicken] = useState(false);
+  const [hatchedDateInput, setHatchedDateInput] = useState("");
 
   // Set today's date in local YYYY-MM-DD on component mount
   useEffect(() => {
     setSelectedDate(todayDate);
+    setHatchedDateInput(todayDate);
   }, [todayDate]);
 
   // Update value state when user changes date (to load existing value if any from allEntries)
@@ -201,6 +203,7 @@ export default function Dashboard({ orgId, orgName }: DashboardProps) {
         notes: notesInput.trim() || undefined,
         storageId,
         presetId,
+        hatchedDate: selectedBreedPreset === "kuriatko" ? hatchedDateInput || undefined : undefined,
       });
 
       // Clear state and close dialog
@@ -210,6 +213,7 @@ export default function Dashboard({ orgId, orgName }: DashboardProps) {
       setNotesInput("");
       setUploadFile(null);
       setSelectedBreedPreset("leghornka");
+      setHatchedDateInput(todayDate);
       setDialogOpen(false);
     } catch (err) {
       console.error(err);
@@ -272,7 +276,7 @@ export default function Dashboard({ orgId, orgName }: DashboardProps) {
     <div className="min-h-screen bg-bg-base font-inter pb-32 selection:bg-accent-light selection:text-accent-primary animate-fade-in">
       {/* Floating Sticky Header - Rounded, Fat & Modern */}
       <div className="w-full sticky top-3 sm:top-4 z-30 px-3 sm:px-0">
-        <header className="mx-auto max-w-3xl bg-bg-surface/90 backdrop-blur-md rounded-2xl py-3 px-4 sm:px-5 flex items-center justify-between h-18 border-none">
+        <header className="mx-auto max-w-5xl bg-bg-surface/90 backdrop-blur-md rounded-2xl py-3 px-4 sm:px-5 flex items-center justify-between h-18 border-none">
           <Logo />
           <div className="flex items-center gap-3.5">
             <OrganizationSwitcher
@@ -293,7 +297,7 @@ export default function Dashboard({ orgId, orgName }: DashboardProps) {
       </div>
 
       {/* Main Content */}
-      <main className="mx-auto max-w-3xl px-4 mt-6 flex flex-col gap-6">
+      <main className="mx-auto max-w-5xl px-4 mt-6 flex flex-col gap-6">
         {/* Title Section */}
         <div className="flex flex-col gap-1">
           <h2 className="font-nunito text-2xl sm:text-3xl font-semibold tracking-tight text-text-primary">
@@ -378,6 +382,8 @@ export default function Dashboard({ orgId, orgName }: DashboardProps) {
             notesInput={notesInput}
             setNotesInput={setNotesInput}
             isSavingChicken={isSavingChicken}
+            hatchedDateInput={hatchedDateInput}
+            setHatchedDateInput={setHatchedDateInput}
           />
         )}
 

@@ -21,6 +21,7 @@ export const create = mutation({
     notes: v.optional(v.string()),
     storageId: v.optional(v.string()),
     presetId: v.optional(v.string()),
+    hatchedDate: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const identity = await ctx.auth.getUserIdentity();
@@ -45,6 +46,7 @@ export const create = mutation({
       notes: args.notes,
       storageId: args.storageId,
       presetId: args.presetId,
+      hatchedDate: args.hatchedDate,
     });
   },
 });
@@ -143,6 +145,80 @@ export const updateCount = mutation({
     await ctx.db.patch(args.id, {
       count: args.count,
     });
+  },
+});
+
+export const promoteChicks = mutation({
+  args: {
+    orgId: v.string(),
+    chickensId: v.id("chickens"),
+    targetPresetId: v.string(),
+    targetName: v.string(),
+    targetColor: v.string(),
+    countToPromote: v.number(),
+  },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) {
+      throw new Error("Unauthenticated");
+    }
+
+    const jwtOrgId = getOrgId(identity);
+    if (jwtOrgId !== args.orgId) {
+      throw new Error("Unauthorized to access this farm");
+    }
+
+    const chicksEntry = await ctx.db.get(args.chickensId);
+    if (!chicksEntry || chicksEntry.orgId !== args.orgId) {
+      throw new Error("Chicks record not found");
+    }
+
+    if (args.countToPromote <= 0 || args.countToPromote > chicksEntry.count) {
+      throw new Error("Invalid count to reassign");
+    }
+
+    // 1. Subtract count from chicks entry
+    const remainingCount = chicksEntry.count - args.countToPromote;
+    if (remainingCount === 0) {
+      await ctx.db.delete(args.chickensId);
+      if (chicksEntry.storageId) {
+        try {
+          await ctx.storage.delete(chicksEntry.storageId);
+        } catch (err) {
+          console.error("Failed to delete image storage:", err);
+        }
+      }
+    } else {
+      await ctx.db.patch(args.chickensId, {
+        count: remainingCount,
+      });
+    }
+
+    // 2. Add count to the target breed
+    // Search for existing entry of this breed in organization
+    const existingTarget = await ctx.db
+      .query("chickens")
+      .withIndex("by_orgId", (q) => q.eq("orgId", args.orgId))
+      .filter((q) =>
+        args.targetPresetId === "custom"
+          ? q.eq(q.field("name"), args.targetName)
+          : q.eq(q.field("presetId"), args.targetPresetId)
+      )
+      .first();
+
+    if (existingTarget) {
+      await ctx.db.patch(existingTarget._id, {
+        count: existingTarget.count + args.countToPromote,
+      });
+    } else {
+      await ctx.db.insert("chickens", {
+        orgId: args.orgId,
+        name: args.targetName,
+        count: args.countToPromote,
+        color: args.targetColor,
+        presetId: args.targetPresetId === "custom" ? undefined : args.targetPresetId,
+      });
+    }
   },
 });
 

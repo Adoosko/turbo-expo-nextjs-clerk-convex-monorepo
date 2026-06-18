@@ -63,4 +63,18 @@ export const CHICKEN_BREED_PRESETS: ChickenBreedPreset[] = [
     color: "#C2410C",
     imageUrl: "/chickens/leghorn-kohut.png",
   },
+  {
+    presetId: "kuriatko",
+    name: "Kuriatko",
+    description: "Mladé kuriatka, ktoré sa nedávno vyliahli a zatiaľ nenášajú vajíčka.",
+    color: "#EAB308",
+    imageUrl: "/chickens/kuriatko.png",
+  },
+  {
+    presetId: "kacka_diva",
+    name: "Kačka divá",
+    description: "Vodná hydina chovaná pre radosť a znášku špecifických vajíčok.",
+    color: "#15803d",
+    imageUrl: "/chickens/kacka-diva.png",
+  },
 ];
