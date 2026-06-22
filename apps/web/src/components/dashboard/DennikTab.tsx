@@ -1,26 +1,89 @@
-import { Card, CardContent } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
-import { endOfWeek, getWeek, startOfWeek } from "date-fns";
-import { Pencil, Search, Trash2 } from "lucide-react";
-import React, { useState } from "react";
-import { formatDateSlovakFull, getWeekDayName, formatDateSlovakNumeric } from "./utils";
+import { ArrowDown, ArrowUp, Filter, Pencil, Search, Trash2 } from "lucide-react";
+import React, { useState, useMemo } from "react";
+import { Entry, EXPENSE_REASON_LABELS } from "@/lib/types";
+import ModuleSelector from "./ModuleSelector";
+import { formatDateSlovakFull, getWeekDayName, formatDateSlovakNumeric, formatDateSlovakShort } from "./utils";
+
+// ─── Types ──────────────────────────────────────────────────
+type TypeFilter = "all" | "income" | "expense";
 
 interface DennikTabProps {
   activeModuleId: string;
   setActiveModuleId: (id: string) => void;
-  allEntries: any[] | undefined;
+  allEntries: Entry[] | undefined;
   todayDate: string;
   userId: string | undefined;
   handleDeleteEntry: (entryId: string) => void;
-  setEditingEntry: (entry: any) => void;
-  setEditValue: (val: number) => void;
-  setEditNote: (val: string) => void;
-  setEditDialogOpen: (open: boolean) => void;
+  onStartEdit: (entry: Entry) => void;
   memberships: any;
   user: any;
 }
 
+// ─── Filter Pill Button ─────────────────────────────────────
+function FilterPill({
+  active,
+  onClick,
+  children,
+  variant = "neutral",
+}: {
+  active: boolean;
+  onClick: () => void;
+  children: React.ReactNode;
+  variant?: "neutral" | "income" | "expense";
+}) {
+  const base =
+    "px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all duration-200 cursor-pointer border-none select-none whitespace-nowrap";
+
+  const variants = {
+    neutral: active
+      ? "bg-text-primary text-white shadow-sm"
+      : "bg-bg-surface-raised/60 text-text-muted hover:bg-bg-surface-raised",
+    income: active
+      ? "bg-accent-primary text-white shadow-sm"
+      : "bg-accent-light/50 text-accent-primary hover:bg-accent-light",
+    expense: active
+      ? "bg-accent-warm text-white shadow-sm"
+      : "bg-amber-50 text-accent-warm hover:bg-amber-100/60",
+  };
+
+  return (
+    <button type="button" onClick={onClick} className={cn(base, variants[variant])}>
+      {children}
+    </button>
+  );
+}
+
+// ─── Stat Pill ──────────────────────────────────────────────
+function StatPill({
+  label,
+  value,
+  unit,
+  color,
+}: {
+  label: string;
+  value: string | number;
+  unit: string;
+  color: "green" | "amber" | "muted";
+}) {
+  const colorClasses = {
+    green: "text-accent-primary",
+    amber: "text-accent-warm",
+    muted: "text-text-primary",
+  };
+
+  return (
+    <div className="flex items-center gap-1.5">
+      <span className="text-[11px] font-medium text-text-muted uppercase tracking-wider">{label}</span>
+      <span className={cn("font-inter text-sm font-bold tabular-nums", colorClasses[color])}>
+        {value}
+      </span>
+      <span className="text-[10px] font-medium text-text-muted">{unit}</span>
+    </div>
+  );
+}
+
+// ─── Main Component ─────────────────────────────────────────
 export default function DennikTab({
   activeModuleId,
   setActiveModuleId,
@@ -28,19 +91,16 @@ export default function DennikTab({
   todayDate,
   userId,
   handleDeleteEntry,
-  setEditingEntry,
-  setEditValue,
-  setEditNote,
-  setEditDialogOpen,
+  onStartEdit,
   memberships,
   user,
 }: DennikTabProps) {
-  // Local filter states
   const [searchTerm, setSearchTerm] = useState("");
   const [filterMonth, setFilterMonth] = useState("all");
+  const [filterType, setFilterType] = useState<TypeFilter>("all");
 
+  // ─── Member resolution ──────────────────────────────────
   const getMemberDetails = (loggedBy: string) => {
-    // 1. Check if it's the current user
     if (loggedBy === userId && user) {
       const initials =
         [user.firstName?.[0], user.lastName?.[0]].filter(Boolean).join("") ||
@@ -53,14 +113,9 @@ export default function DennikTab({
         user.username ||
         user.primaryEmailAddress?.emailAddress ||
         "Vy";
-      return {
-        imageUrl: user.imageUrl,
-        name,
-        initials,
-      };
+      return { imageUrl: user.imageUrl, name, initials };
     }
 
-    // 2. Check memberships list
     const membership = memberships?.data?.find(
       (m: any) => m.publicUserData?.userId === loggedBy
     );
@@ -74,14 +129,9 @@ export default function DennikTab({
         member.firstName || member.lastName
           ? [member.firstName, member.lastName].filter(Boolean).join(" ")
           : member.identifier;
-      return {
-        imageUrl: member.imageUrl,
-        name,
-        initials,
-      };
+      return { imageUrl: member.imageUrl, name, initials };
     }
 
-    // 3. Fallback
     return null;
   };
 
@@ -92,51 +142,37 @@ export default function DennikTab({
         <img
           src={memberInfo.imageUrl}
           alt={memberInfo.name}
-          className="w-7 h-7 sm:w-8 sm:h-8 rounded-full object-cover bg-bg-base"
+          className="w-6 h-6 rounded-full object-cover ring-1 ring-border-default/50"
           title={memberInfo.name}
         />
       ) : (
         <div
-          className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-accent-light flex items-center justify-center cursor-help"
+          className="w-6 h-6 rounded-full bg-accent-light flex items-center justify-center"
           title={memberInfo.name}
         >
-          <span className="font-nunito text-[11px] sm:text-xs font-semibold text-accent-primary">
+          <span className="font-inter text-[10px] font-semibold text-accent-primary">
             {memberInfo.initials}
           </span>
         </div>
       );
     }
     return (
-      <div
-        className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-bg-base/60 flex items-center justify-center"
-        title="Neznámy člen"
-      >
-        <span className="text-[10px] sm:text-[11px] text-text-muted font-semibold">?</span>
+      <div className="w-6 h-6 rounded-full bg-bg-surface-raised/60 flex items-center justify-center" title="Neznámy člen">
+        <span className="text-[9px] text-text-muted font-semibold">?</span>
       </div>
     );
   };
 
-  // Filter entries by module ID first, so all stats reflect only the active module
+  // ─── Data pipeline ──────────────────────────────────────
   const moduleEntries = allEntries ? allEntries.filter((e) => e.moduleId === activeModuleId) : [];
 
-  const totalEntries = moduleEntries.length;
-  const totalEggs = moduleEntries.reduce((s, e) => s + (e.value || 0), 0);
-  const avgEggs = totalEntries > 0 ? totalEggs / totalEntries : 0;
-  
-  const maxEntryValue =
-    moduleEntries.length > 0
-      ? Math.max(...moduleEntries.map((e) => e.value || 0), 1)
-      : 1;
-
-  // Extract unique months from moduleEntries
-  const uniqueMonths = Array.from(
-    new Set(
-      moduleEntries.map((e) => {
-        const [y, m] = e.date.split("-");
-        return `${y}-${m}`;
-      })
-    )
-  ).sort((a, b) => b.localeCompare(a));
+  const uniqueMonths = useMemo(
+    () =>
+      Array.from(
+        new Set(moduleEntries.map((e) => e.date.substring(0, 7)))
+      ).sort((a, b) => b.localeCompare(a)),
+    [moduleEntries]
+  );
 
   const formatMonthYearLabel = (ymStr: string) => {
     const [y, m] = ymStr.split("-").map(Number);
@@ -145,368 +181,400 @@ export default function DennikTab({
     return formatted.charAt(0).toUpperCase() + formatted.slice(1);
   };
 
-  const filteredEntries = moduleEntries.filter((entry) => {
-    const matchesSearch =
-      !searchTerm ||
-      (entry.note && entry.note.toLowerCase().includes(searchTerm.toLowerCase()));
-    const entryMonth = entry.date.substring(0, 7); // "YYYY-MM"
-    const matchesMonth = filterMonth === "all" || entryMonth === filterMonth;
-    return matchesSearch && matchesMonth;
-  });
+  // ─── Filtering ──────────────────────────────────────────
+  const filteredEntries = useMemo(() => {
+    return moduleEntries.filter((entry) => {
+      // Month filter
+      if (filterMonth !== "all" && entry.date.substring(0, 7) !== filterMonth) return false;
 
-  const getGroupedEntries = () => {
-    const grouped: {
-      monthKey: string;
-      monthLabel: string;
-      weeks: {
-        weekKey: string;
-        weekLabel: string;
-        entries: any[];
-      }[];
-    }[] = [];
+      // Type filter
+      if (filterType !== "all") {
+        const entryType = entry.type || "income";
+        if (entryType !== filterType) return false;
+      }
+
+      // Search
+      if (!searchTerm) return true;
+      const term = searchTerm.toLowerCase();
+      const memberName = getMemberDetails(entry.loggedBy)?.name || "";
+      const dayName = getWeekDayName(entry.date);
+      const dateSlovakNum = formatDateSlovakNumeric(entry.date);
+      const dateSlovakFull = formatDateSlovakFull(entry.date);
+      const typeLabel = entry.type === "expense" ? "výdaj" : "znáška príjem";
+      const reasonLabel = entry.type === "expense" && entry.reason ? EXPENSE_REASON_LABELS[entry.reason] || "" : "";
+
+      return (
+        (entry.note && entry.note.toLowerCase().includes(term)) ||
+        entry.value.toString().includes(term) ||
+        memberName.toLowerCase().includes(term) ||
+        dayName.toLowerCase().includes(term) ||
+        dateSlovakNum.toLowerCase().includes(term) ||
+        dateSlovakFull.toLowerCase().includes(term) ||
+        typeLabel.toLowerCase().includes(term) ||
+        reasonLabel.toLowerCase().includes(term)
+      );
+    });
+  }, [moduleEntries, filterMonth, filterType, searchTerm]);
+
+  // ─── Statistics ─────────────────────────────────────────
+  const stats = useMemo(() => {
+    const income = filteredEntries.filter((e) => !e.type || e.type === "income");
+    const expense = filteredEntries.filter((e) => e.type === "expense");
+    const totalIncome = income.reduce((s, e) => s + e.value, 0);
+    const totalExpense = expense.reduce((s, e) => s + e.value, 0);
+    const incomeDays = new Set(income.map((e) => e.date)).size;
+    const avg = incomeDays > 0 ? totalIncome / incomeDays : 0;
+    const maxIncome = income.length > 0 ? Math.max(...income.map((e) => e.value)) : 0;
+    return { totalIncome, totalExpense, avg, maxIncome, entryCount: filteredEntries.length };
+  }, [filteredEntries]);
+
+  // ─── Grouped by month ───────────────────────────────────
+  const groupedEntries = useMemo(() => {
+    const grouped: { monthKey: string; monthLabel: string; entries: Entry[]; monthIncome: number; monthExpense: number }[] = [];
 
     filteredEntries.forEach((entry) => {
-      const [y, m, d] = entry.date.split("-").map(Number);
-      const date = new Date(y, m - 1, d);
-      const monthKey = entry.date.substring(0, 7); // "YYYY-MM"
-
-      const rawMonthName = date.toLocaleDateString("sk-SK", { month: "long", year: "numeric" });
-      const monthLabel = rawMonthName.charAt(0).toUpperCase() + rawMonthName.slice(1);
-
-      const monday = startOfWeek(date, { weekStartsOn: 1 });
-      const sunday = endOfWeek(date, { weekStartsOn: 1 });
-      const weekNum = getWeek(date, { weekStartsOn: 1 });
-      const weekKey = `${monday.toLocaleDateString("en-CA")}_${weekNum}`;
-
-      const mondayStr = monday.toLocaleDateString("sk-SK", { day: "numeric", month: "numeric" });
-      const sundayStr = sunday.toLocaleDateString("sk-SK", { day: "numeric", month: "numeric" });
-      const weekLabel = `Týždeň ${weekNum} (${mondayStr} – ${sundayStr})`;
-
+      const monthKey = entry.date.substring(0, 7);
       let mGroup = grouped.find((g) => g.monthKey === monthKey);
       if (!mGroup) {
-        mGroup = { monthKey, monthLabel, weeks: [] };
+        const [y, m] = monthKey.split("-").map(Number);
+        const date = new Date(y, m - 1, 1);
+        const raw = date.toLocaleDateString("sk-SK", { month: "long", year: "numeric" });
+        mGroup = {
+          monthKey,
+          monthLabel: raw.charAt(0).toUpperCase() + raw.slice(1),
+          entries: [],
+          monthIncome: 0,
+          monthExpense: 0,
+        };
         grouped.push(mGroup);
       }
-
-      let wGroup = mGroup.weeks.find((w) => w.weekKey === weekKey);
-      if (!wGroup) {
-        wGroup = { weekKey, weekLabel, entries: [] };
-        mGroup.weeks.push(wGroup);
+      mGroup.entries.push(entry);
+      if (!entry.type || entry.type === "income") {
+        mGroup.monthIncome += entry.value;
+      } else {
+        mGroup.monthExpense += entry.value;
       }
-
-      wGroup.entries.push(entry);
     });
 
     return grouped;
-  };
+  }, [filteredEntries]);
 
-  const groupedEntries = getGroupedEntries();
-
-  // Performance helper
-  const getPerformanceState = (val: number) => {
-    if (avgEggs === 0) return "normal";
-    const ratio = val / avgEggs;
-    if (ratio >= 1.15) return "good";
-    if (ratio <= 0.85) return "bad";
-    return "normal";
-  };
-
+  // ─── Render ─────────────────────────────────────────────
   return (
-    <div className="flex flex-col gap-6">
-      {/* Modular Modules Selector */}
-      <div className="flex flex-wrap gap-2">
-        <button
-          onClick={() => setActiveModuleId("vajcia")}
-          className={cn(
-            "flex items-center gap-3 px-4 py-2.5 rounded-xl transition-all duration-200 text-left cursor-pointer",
-            activeModuleId === "vajcia"
-              ? "bg-accent-primary text-white"
-              : "bg-bg-surface hover:bg-bg-surface-raised text-text-muted"
-          )}
-        >
-          <div
-            className={cn(
-              "flex h-6 w-6 items-center justify-center rounded-lg",
-              activeModuleId === "vajcia" ? "text-amber-100" : "text-text-muted"
-            )}
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="14"
-              height="14"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2.5"
-              className="fill-current"
-            >
-              <path d="M12 2C6.5 2 2 10 2 15a10 10 0 0 0 20 0c0-5-4.5-13-10-13Z" />
-            </svg>
-          </div>
-          <span className="font-medium text-sm">Sliepky</span>
-        </button>
+    <div className="flex flex-col gap-5">
+      {/* Module Selector */}
+      <ModuleSelector activeModuleId={activeModuleId} setActiveModuleId={setActiveModuleId} />
 
-        <div className="flex items-center gap-3 px-4 py-2.5 rounded-xl bg-bg-surface/40 text-text-muted/40 select-none">
-          <div className="flex h-5 w-5 items-center justify-center text-text-muted/40">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="14"
-              height="14"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2.5"
-            >
-              <path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z" />
-              <circle cx="12" cy="12" r="3" />
-            </svg>
-          </div>
-          <span className="font-medium text-sm">Záhrada (V2)</span>
-        </div>
-      </div>
-
-      {/* Summary stats card */}
-      {moduleEntries.length > 0 && (
-        <Card className="bg-bg-surface rounded-2xl overflow-hidden shadow-none border-0">
-          <CardContent className="p-5">
-            <div className="w-full grid grid-cols-3 gap-2.5 sm:gap-3 text-left">
-              <div className="rounded-xl bg-bg-base/60 p-3 flex flex-col">
-                <span className="text-xs font-medium text-text-muted/80 uppercase tracking-wider">
-                  Celkom
-                </span>
-                <span className="font-nunito text-lg sm:text-xl font-semibold text-accent-warm mt-0.5">
-                  {totalEggs}{" "}
-                  <span className="text-sm font-medium font-inter text-text-muted">ks</span>
-                </span>
-              </div>
-              <div className="rounded-xl bg-bg-base/60 p-3 flex flex-col">
-                <span className="text-xs font-medium text-text-muted/80 uppercase tracking-wider">
-                  Priemer / deň
-                </span>
-                <span className="font-nunito text-lg sm:text-xl font-semibold text-accent-primary mt-0.5">
-                  {avgEggs.toFixed(1)}{" "}
-                  <span className="text-sm font-medium font-inter text-text-muted">ks</span>
-                </span>
-              </div>
-              <div className="rounded-xl bg-bg-base/60 p-3 flex flex-col">
-                <span className="text-xs font-medium text-text-muted/80 uppercase tracking-wider">
-                  Rekord dňa
-                </span>
-                <span className="font-nunito text-lg sm:text-xl font-semibold text-text-primary mt-0.5">
-                  {maxEntryValue}{" "}
-                  <span className="text-sm font-medium font-inter text-text-muted">ks</span>
-                </span>
-              </div>
+      {/* ── Toolbar: Stats + Filters ── */}
+      <div className="bg-bg-surface rounded-2xl overflow-hidden shadow-none border border-border-default/40 animate-fade-in">
+        {/* Inline stat bar */}
+        {stats.entryCount > 0 && (
+          <div className="flex items-center gap-4 sm:gap-6 px-4 sm:px-5 py-3 border-b border-border-default/30 overflow-x-auto scrollbar-none">
+            <StatPill label="Znáška" value={stats.totalIncome} unit="ks" color="green" />
+            <div className="w-px h-4 bg-border-default/40 shrink-0" />
+            <StatPill label="Výdaj" value={stats.totalExpense} unit="ks" color="amber" />
+            <div className="w-px h-4 bg-border-default/40 shrink-0" />
+            <div className="flex">
+              <StatPill label="Priemer" value={stats.avg.toFixed(1)} unit="ks/deň" color="muted" />
             </div>
-          </CardContent>
-        </Card>
-      )}
+            {stats.maxIncome > 0 && (
+              <>
+                <div className="w-px h-4 bg-border-default/40 shrink-0" />
+                <StatPill label="Rekord" value={stats.maxIncome} unit="ks" color="green" />
+              </>
+            )}
+          </div>
+        )}
 
-      {/* Filters Bar */}
-      <div className="flex flex-col sm:flex-row gap-3 items-center justify-between bg-bg-surface p-4 rounded-2xl shadow-none border-0">
-        <div className="relative w-full sm:max-w-xs">
-          <Search className="absolute left-3.5 top-3.5 h-4 w-4 text-text-muted/50" />
-          <Input
-            type="text"
-            placeholder="Vyhľadať v poznámkach..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10 bg-bg-base/60 rounded-xl px-4 py-2.5 text-sm text-text-primary focus:ring-1 focus:ring-accent-primary placeholder:text-text-muted/40 h-11 border-none"
-          />
-        </div>
+        {/* Filter row */}
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 px-4 sm:px-5 py-3">
+          {/* Type filter pills */}
+          <div className="flex items-center gap-1.5 shrink-0">
+            <Filter className="h-3.5 w-3.5 text-text-muted/50 mr-1 hidden sm:block" />
+            <FilterPill active={filterType === "all"} onClick={() => setFilterType("all")} variant="neutral">
+              Všetko
+            </FilterPill>
+            <FilterPill active={filterType === "income"} onClick={() => setFilterType("income")} variant="income">
+              ↑ Znáška
+            </FilterPill>
+            <FilterPill active={filterType === "expense"} onClick={() => setFilterType("expense")} variant="expense">
+              ↓ Výdaj
+            </FilterPill>
+          </div>
 
-        <div className="flex items-center gap-2 w-full sm:w-auto">
-          <span className="text-xs font-semibold text-text-muted uppercase tracking-wider whitespace-nowrap hidden sm:inline">
-            Mesiac:
-          </span>
-          <select
-            value={filterMonth}
-            onChange={(e) => setFilterMonth(e.target.value)}
-            className="w-full sm:w-[180px] bg-bg-base/60 border-none rounded-xl px-4 py-2.5 text-sm text-text-primary focus:ring-1 focus:ring-accent-primary h-11"
-          >
-            <option value="all">Všetky mesiace</option>
-            {uniqueMonths.map((ym) => (
-              <option key={ym} value={ym}>
-                {formatMonthYearLabel(ym)}
-              </option>
-            ))}
-          </select>
+          <div className="flex-1" />
+
+          {/* Search + Month */}
+          <div className="flex items-center gap-2">
+            <div className="relative flex-1 sm:flex-initial">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-text-muted/40" />
+              <input
+                type="text"
+                placeholder="Hľadať..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full sm:w-44 pl-8 pr-3 py-2 bg-bg-base/60 rounded-lg text-xs text-text-primary placeholder:text-text-muted/40 border-none focus:outline-none focus:ring-1 focus:ring-accent-primary/40 transition-shadow"
+              />
+            </div>
+            <select
+              value={filterMonth}
+              onChange={(e) => setFilterMonth(e.target.value)}
+              className="bg-bg-base/60 border-none rounded-lg px-3 py-2 text-xs text-text-primary focus:ring-1 focus:ring-accent-primary/40 cursor-pointer focus:outline-none"
+            >
+              <option value="all">Všetky mesiace</option>
+              {uniqueMonths.map((ym) => (
+                <option key={ym} value={ym}>{formatMonthYearLabel(ym)}</option>
+              ))}
+            </select>
+          </div>
         </div>
       </div>
 
-      {/* Timeline List */}
+      {/* ── Table ── */}
       {allEntries === undefined ? (
-        <div className="flex flex-col gap-4">
-          {Array.from({ length: 3 }).map((_, i) => (
-            <div key={i} className="h-24 w-full animate-pulse rounded-2xl bg-bg-surface" />
+        /* Loading skeleton */
+        <div className="bg-bg-surface rounded-2xl border border-border-default/40 overflow-hidden">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div
+              key={i}
+              className={cn("flex items-center gap-4 px-5 py-3.5", i % 2 === 0 ? "bg-bg-surface" : "bg-bg-base/30")}
+            >
+              <div className="h-3 w-16 rounded bg-bg-surface-raised/60 animate-pulse" />
+              <div className="h-5 w-14 rounded-full bg-bg-surface-raised/60 animate-pulse" />
+              <div className="flex-1" />
+              <div className="h-3 w-10 rounded bg-bg-surface-raised/60 animate-pulse" />
+              <div className="h-6 w-6 rounded-full bg-bg-surface-raised/60 animate-pulse" />
+            </div>
           ))}
         </div>
       ) : filteredEntries.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-16 text-center p-6 bg-bg-surface rounded-2xl shadow-none border-0 animate-fade-in">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="h-12 w-12 text-text-muted/30 mb-3"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2.5"
-          >
-            <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" />
-            <polyline points="14 2 14 8 20 8" />
-          </svg>
-          <p className="text-base font-semibold text-text-primary">Nenašli sa žiadne záznamy</p>
-          <p className="text-sm font-medium text-text-muted max-w-xs mt-1">
-            Skúste upraviť vyhľadávanie alebo filter mesiacov.
+        /* Empty state */
+        <div className="flex flex-col items-center justify-center py-20 bg-bg-surface rounded-2xl border border-border-default/40 animate-fade-in">
+          <div className="w-14 h-14 rounded-2xl bg-bg-base flex items-center justify-center mb-4">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-7 w-7 text-text-muted/30" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" />
+              <polyline points="14 2 14 8 20 8" />
+              <line x1="16" y1="13" x2="8" y2="13" />
+              <line x1="16" y1="17" x2="8" y2="17" />
+            </svg>
+          </div>
+          <p className="text-sm font-semibold text-text-primary">Žiadne záznamy</p>
+          <p className="text-xs text-text-muted mt-1 max-w-[220px] text-center">
+            Skúste upraviť filtre alebo vyhľadávanie.
           </p>
         </div>
       ) : (
-        <div className="flex flex-col gap-8 pb-24">
+        /* Data table */
+        <div className="bg-bg-surface rounded-2xl border border-border-default/40 overflow-hidden">
+          {/* Desktop table header */}
+          <div className="hidden sm:grid grid-cols-[minmax(140px,1.2fr)_100px_100px_1fr_40px_72px] gap-2 px-5 py-2.5 border-b border-border-default/30 bg-bg-base/40">
+            <span className="text-[10px] font-semibold text-text-muted uppercase tracking-wider">Dátum</span>
+            <span className="text-[10px] font-semibold text-text-muted uppercase tracking-wider">Typ</span>
+            <span className="text-[10px] font-semibold text-text-muted uppercase tracking-wider text-right">Množstvo</span>
+            <span className="text-[10px] font-semibold text-text-muted uppercase tracking-wider">Poznámka</span>
+            <span className="text-[10px] font-semibold text-text-muted uppercase tracking-wider text-center">Kto</span>
+            <span />
+          </div>
+
+          {/* Grouped entries */}
           {groupedEntries.map((mGroup) => (
-            <div key={mGroup.monthKey} className="flex flex-col gap-6 animate-fade-in relative">
-              {/* Month Header */}
-              <div className="flex items-center justify-between px-2 pt-2 select-none z-20 sticky top-[64px] bg-bg-base py-2">
-                <h4 className="font-nunito text-xl font-semibold text-text-primary uppercase tracking-wide">
+            <div key={mGroup.monthKey}>
+              {/* Month separator */}
+              <div className="flex items-center gap-3 px-5 py-2 bg-bg-base/50 border-y border-border-default/20">
+                <span className="text-[11px] font-bold text-text-primary uppercase tracking-wide">
                   {mGroup.monthLabel}
-                </h4>
-                <span className="text-xs font-semibold text-text-muted bg-bg-surface px-3 py-1.5 rounded-full shadow-none">
-                  {mGroup.weeks.reduce((sum, w) => sum + w.entries.length, 0)} záznamov
                 </span>
+                <div className="flex-1 h-px bg-border-default/20" />
+                <div className="flex items-center gap-2.5 text-[10px] font-semibold">
+                  {mGroup.monthIncome > 0 && (
+                    <span className="text-accent-primary">{mGroup.monthIncome} ks ↑</span>
+                  )}
+                  {mGroup.monthExpense > 0 && (
+                    <span className="text-accent-warm">{mGroup.monthExpense} ks ↓</span>
+                  )}
+                </div>
               </div>
 
-              {/* Weeks inside this Month */}
-              <div className="flex flex-col gap-8 ml-2 sm:ml-4 relative">
-                {/* The global vertical timeline thread for this month */}
-                <div className="absolute top-2 bottom-0 left-[11px] w-[2px] bg-bg-surface border-r border-border-default/50 z-0" />
+              {/* Entry rows */}
+              {mGroup.entries.map((entry, rowIdx) => {
+                const isIncome = !entry.type || entry.type === "income";
+                const isToday = entry.date === todayDate;
+                const isEven = rowIdx % 2 === 0;
 
-                {mGroup.weeks.map((wGroup) => (
-                  <div key={wGroup.weekKey} className="flex flex-col gap-4 relative z-10">
-                    
-                    {/* Week Divider Header (Sticky to the timeline) */}
-                    <div className="flex items-center gap-4 relative">
-                      <div className="w-6 h-6 rounded-full bg-bg-surface ring-2 ring-bg-base flex items-center justify-center z-10 shadow-none">
-                        <div className="w-2 h-2 rounded-full bg-text-muted/40" />
+                return (
+                  <div
+                    key={entry._id}
+                    className={cn(
+                      "group relative animate-fade-in-up",
+                      "transition-colors duration-150",
+                      isEven ? "bg-bg-surface" : "bg-bg-base/20",
+                      "hover:bg-accent-light/25"
+                    )}
+                    style={{ "--stagger-index": rowIdx } as React.CSSProperties}
+                  >
+                    {/* ── Desktop row ── */}
+                    <div className="hidden sm:grid grid-cols-[minmax(140px,1.2fr)_100px_100px_1fr_40px_72px] gap-2 items-center px-5 py-3">
+                      {/* Date */}
+                      <div className="flex items-center gap-2 min-w-0">
+                        <span className="text-sm font-medium text-text-primary truncate">
+                          {formatDateSlovakShort(entry.date)}
+                        </span>
+                        <span className="text-[10px] font-medium text-text-muted capitalize">
+                          {getWeekDayName(entry.date).substring(0, 2)}
+                        </span>
+                        {isToday && (
+                          <span className="text-[9px] font-bold text-accent-primary bg-accent-light rounded px-1.5 py-0.5 leading-none uppercase tracking-wide">
+                            Dnes
+                          </span>
+                        )}
                       </div>
-                      <div className="bg-bg-surface px-4 py-1.5 rounded-full shadow-[0_4px_12px_rgba(0,0,0,0.03)] border-0 flex items-center gap-3">
-                        <span className="text-[11px] font-semibold text-text-muted uppercase tracking-wider">
-                          {wGroup.weekLabel}
+
+                      {/* Type badge */}
+                      <div>
+                        <span
+                          className={cn(
+                            "inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide",
+                            isIncome
+                              ? "bg-accent-light/60 text-accent-primary"
+                              : "bg-amber-50 text-accent-warm"
+                          )}
+                        >
+                          {isIncome ? (
+                            <><ArrowUp className="h-2.5 w-2.5" />Znáška</>
+                          ) : (
+                            <><ArrowDown className="h-2.5 w-2.5" />{entry.reason ? EXPENSE_REASON_LABELS[entry.reason] : "Výdaj"}</>
+                          )}
                         </span>
-                        <span className="text-[11px] font-semibold text-accent-primary bg-accent-light px-2 py-0.5 rounded-lg">
-                          {wGroup.entries.reduce((sum, e) => sum + e.value, 0)} ks
+                      </div>
+
+                      {/* Quantity */}
+                      <div className="text-right flex items-center justify-end gap-1.5">
+                        {activeModuleId === "vajcia" && (
+                          <img
+                            src="/egg.png"
+                            alt="Vajce"
+                            className="h-5 w-5 object-contain shrink-0"
+                          />
+                        )}
+                        <span className={cn(
+                          "font-inter text-sm font-bold tabular-nums",
+                          isIncome ? "text-accent-primary" : "text-accent-warm"
+                        )}>
+                          {isIncome ? "+" : "−"}{entry.value}
                         </span>
+                        <span className="text-[10px] font-medium text-text-muted ml-0.5">ks</span>
+                      </div>
+
+                      {/* Note */}
+                      <div className="min-w-0">
+                        {entry.note ? (
+                          <span className="text-xs text-text-muted truncate block max-w-[300px]" title={entry.note}>
+                            {entry.note}
+                          </span>
+                        ) : (
+                          <span className="text-xs text-text-muted/30">—</span>
+                        )}
+                      </div>
+
+                      {/* Avatar */}
+                      <div className="flex justify-center">
+                        {renderAvatar(entry.loggedBy)}
+                      </div>
+
+                      {/* Actions — visible on hover only */}
+                      <div className="flex items-center justify-end gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
+                        <button
+                          type="button"
+                          onClick={() => onStartEdit(entry)}
+                          className="p-1.5 rounded-lg text-text-muted/50 hover:text-accent-primary hover:bg-accent-light/60 transition-colors duration-150 cursor-pointer border-none bg-transparent"
+                          title="Upraviť"
+                        >
+                          <Pencil className="h-3.5 w-3.5" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteEntry(entry._id)}
+                          className="p-1.5 rounded-lg text-text-muted/50 hover:text-state-error hover:bg-red-50/60 transition-colors duration-150 cursor-pointer border-none bg-transparent"
+                          title="Vymazať"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
                       </div>
                     </div>
 
-                    {/* Entries for the week */}
-                    <div className="flex flex-col gap-3 pl-8 sm:pl-10">
-                      {wGroup.entries.map((entry) => {
-                        const isToday = entry.date === todayDate;
-                        
-                        // Uniform colors for all nodes and chips
-                        const nodeColor = "bg-accent-light border-accent-light";
-                        const chipBg = "bg-bg-base/60 text-text-primary";
-                        const chipText = "text-text-primary";
+                    {/* ── Mobile row ── */}
+                    <div className="sm:hidden flex items-center gap-3 px-4 py-3">
+                      {/* Left: type indicator dot + date */}
+                      <div className={cn(
+                        "w-1.5 h-1.5 rounded-full shrink-0",
+                        isIncome ? "bg-accent-primary" : "bg-accent-warm"
+                      )} />
 
-                        return (
-                          <div key={entry._id} className="relative flex items-center group">
-                            
-                            {/* Timeline Node for the entry */}
-                            <div className="absolute -left-8 sm:-left-10 w-6 h-6 flex items-center justify-center">
-                              <div className={cn("w-3 h-3 rounded-full shadow-none transition-transform group-hover:scale-125", nodeColor)} />
-                            </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-medium text-text-primary">
+                            {formatDateSlovakNumeric(entry.date)}
+                          </span>
+                          <span className="text-[10px] font-medium text-text-muted capitalize">
+                            {getWeekDayName(entry.date).substring(0, 2)}
+                          </span>
+                          {isToday && (
+                            <span className="text-[9px] font-bold text-accent-primary bg-accent-light rounded px-1.5 py-0.5 leading-none">
+                              Dnes
+                            </span>
+                          )}
+                        </div>
+                        {entry.note && (
+                          <p className="text-[11px] text-text-muted truncate mt-0.5">{entry.note}</p>
+                        )}
+                      </div>
 
-                            {/* Card-based Entry */}
-                            <Card
-                              className={cn(
-                                "flex-1 bg-bg-surface rounded-2xl overflow-hidden border-0 shadow-none transition-all duration-200 cursor-default"
-                              )}
-                            >
-                              <div className="flex items-center justify-between gap-2.5 sm:gap-4 px-3 sm:px-5 py-2.5 sm:py-4">
-                                
-                                {/* Left Section: Date & note block */}
-                                <div className="flex flex-col min-w-0 flex-1">
-                                  <div className="flex items-center gap-1.5 flex-wrap">
-                                    {/* Desktop Date */}
-                                    <span className="hidden sm:inline text-sm font-semibold text-text-primary leading-tight">
-                                      {formatDateSlovakFull(entry.date)}
-                                    </span>
-                                    {/* Mobile Date */}
-                                    <span className="sm:hidden text-sm font-semibold text-text-primary leading-tight">
-                                      {formatDateSlovakNumeric(entry.date)}
-                                    </span>
-                                    {isToday && (
-                                      <span className="shrink-0 text-[10px] font-semibold text-accent-primary bg-accent-light rounded-full px-2 py-0.5 leading-none">
-                                        Dnes
-                                      </span>
-                                    )}
-                                  </div>
-                                  <span className="text-[11px] font-semibold text-text-muted capitalize mt-0.5">
-                                    {getWeekDayName(entry.date)}
-                                  </span>
-                                  {entry.note && (
-                                    <span
-                                      className="text-[11px] sm:text-xs text-text-muted/80 font-medium mt-1 bg-bg-base/60 inline-block px-2 py-0.5 rounded-lg truncate max-w-full sm:max-w-[280px]"
-                                      title={entry.note}
-                                    >
-                                      „{entry.note}“
-                                    </span>
-                                  )}
-                                </div>
+                      {/* Quantity */}
+                      <div className="flex items-center gap-1 shrink-0">
+                        {activeModuleId === "vajcia" && (
+                          <img
+                            src="/egg.png"
+                            alt="Vajce"
+                            className="h-4 w-4 object-contain shrink-0"
+                          />
+                        )}
+                        <span className={cn(
+                          "font-inter text-sm font-bold tabular-nums",
+                          isIncome ? "text-accent-primary" : "text-accent-warm"
+                        )}>
+                          {isIncome ? "+" : "−"}{entry.value}
+                        </span>
+                        <span className="text-[10px] font-medium text-text-muted ml-0.5">ks</span>
+                      </div>
 
-                                {/* Right Section: Egg count, Avatar, and Action buttons */}
-                                <div className="flex items-center gap-2 sm:gap-3.5 shrink-0">
-                                  
-                                  {/* Egg count chip */}
-                                  <div className={cn("flex items-center gap-1.5 rounded-xl px-2 py-1.5 sm:px-4 sm:py-2 shrink-0 transition-colors", chipBg)}>
-                                    <img src="/egg.png" alt="Vajce" className="h-4.5 w-4.5 sm:h-6 sm:w-6 object-contain opacity-90" />
-                                    <span className={cn("font-nunito text-base sm:text-xl font-semibold select-none", chipText)}>
-                                      {entry.value}
-                                      <span className="text-[10px] sm:text-sm font-semibold font-inter lowercase ml-0.5 opacity-80">
-                                        ks
-                                      </span>
-                                    </span>
-                                  </div>
-
-                                  {/* Avatar */}
-                                  <div className="shrink-0 flex items-center justify-center">
-                                    {renderAvatar(entry.loggedBy)}
-                                  </div>
-
-                                  {/* Action buttons */}
-                                  <div className="flex items-center gap-0.5 shrink-0">
-                                    <button
-                                      onClick={() => {
-                                        setEditingEntry(entry);
-                                        setEditValue(entry.value);
-                                        setEditNote(entry.note || "");
-                                        setEditDialogOpen(true);
-                                      }}
-                                      className="p-1.5 sm:p-2.5 rounded-xl text-text-muted/40 hover:text-accent-primary hover:bg-accent-light/60 transition duration-200 cursor-pointer border-none bg-transparent"
-                                      title="Upraviť záznam"
-                                    >
-                                      <Pencil className="h-4 w-4" />
-                                    </button>
-                                    <button
-                                      onClick={() => handleDeleteEntry(entry._id)}
-                                      className="p-1.5 sm:p-2.5 rounded-xl text-text-muted/40 hover:text-state-error hover:bg-red-50/60 transition duration-200 cursor-pointer border-none bg-transparent"
-                                      title="Vymazať záznam"
-                                    >
-                                      <Trash2 className="h-4 w-4" />
-                                    </button>
-                                  </div>
-
-                                </div>
-
-                              </div>
-                            </Card>
-                          </div>
-                        );
-                      })}
+                      {/* Actions — always visible on mobile */}
+                      <div className="flex items-center gap-0 shrink-0">
+                        <button
+                          type="button"
+                          onClick={() => onStartEdit(entry)}
+                          className="p-1.5 rounded-lg text-text-muted/40 hover:text-accent-primary transition-colors cursor-pointer border-none bg-transparent"
+                          title="Upraviť"
+                        >
+                          <Pencil className="h-3.5 w-3.5" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteEntry(entry._id)}
+                          className="p-1.5 rounded-lg text-text-muted/40 hover:text-state-error transition-colors cursor-pointer border-none bg-transparent"
+                          title="Vymazať"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
                     </div>
                   </div>
-                ))}
-              </div>
+                );
+              })}
             </div>
           ))}
+
+          {/* Bottom padding for mobile FAB clearance */}
+          <div className="h-20 sm:h-4" />
         </div>
       )}
     </div>

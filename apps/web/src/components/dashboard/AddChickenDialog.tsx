@@ -58,7 +58,7 @@ export default function AddChickenDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[425px] bg-bg-surface rounded-3xl p-6">
         <DialogHeader>
-          <DialogTitle className="font-nunito text-xl font-semibold text-text-primary">
+          <DialogTitle className="font-inter text-lg font-semibold text-text-primary">
             Pridať do hejna
           </DialogTitle>
           <DialogDescription className="text-sm font-medium text-text-muted">

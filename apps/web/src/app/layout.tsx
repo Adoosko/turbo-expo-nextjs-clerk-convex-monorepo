@@ -13,7 +13,7 @@ const inter = Inter({
 const nunito = Nunito({
   subsets: ["latin"],
   variable: "--font-nunito",
-  weight: ["800"],
+  weight: ["600", "700", "800"],
 });
 
 export const metadata: Metadata = {

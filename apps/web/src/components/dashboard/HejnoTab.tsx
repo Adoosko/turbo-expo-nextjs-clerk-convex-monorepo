@@ -128,7 +128,7 @@ export default function HejnoTab({
       {/* Header section with add button */}
       <div className="flex items-center justify-between border-b border-bg-base pb-3">
         <div>
-          <h3 className="font-nunito text-lg font-bold text-text-primary">
+          <h3 className="font-nunito text-lg font-extrabold text-text-primary">
             Plemená a zloženie hejna
           </h3>
           <p className="text-xs font-medium text-text-muted">
@@ -210,7 +210,7 @@ export default function HejnoTab({
                   <div>
                     {/* Name line */}
                     <div className="flex items-center gap-2 flex-wrap">
-                      <span className="font-nunito font-semibold text-base sm:text-lg text-text-primary truncate">
+                      <span className="font-inter font-semibold text-base sm:text-lg text-text-primary truncate">
                         {info.name}
                       </span>
                       <div
@@ -287,7 +287,7 @@ export default function HejnoTab({
                         >
                           <Minus className="h-4 w-4" />
                         </button>
-                        <span className="font-nunito text-sm font-semibold text-accent-primary select-none px-1">
+                        <span className="font-inter text-sm font-bold tabular-nums text-accent-primary select-none px-1">
                           {c.count}
                           <span className="text-xs font-medium font-inter lowercase ml-0.5">ks</span>
                         </span>
@@ -333,7 +333,7 @@ export default function HejnoTab({
       <Dialog open={promoteDialogOpen} onOpenChange={setPromoteDialogOpen}>
         <DialogContent className="sm:max-w-[425px] bg-bg-surface rounded-3xl p-6">
           <DialogHeader>
-            <DialogTitle className="font-nunito text-xl font-semibold text-text-primary">
+            <DialogTitle className="font-inter text-lg font-semibold text-text-primary">
               Preradiť kuriatka na nosnice
             </DialogTitle>
             <DialogDescription className="text-sm font-medium text-text-muted">

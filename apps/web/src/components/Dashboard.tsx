@@ -1,10 +1,10 @@
-//@ts-nocheck
 /* eslint-disable react-hooks/set-state-in-effect */
 "use client";
 
 import { cn } from "@/lib/utils";
 import { OrganizationSwitcher, useOrganization, UserButton, useUser } from "@clerk/nextjs";
 import { api } from "@packages/backend/convex/_generated/api";
+import { Id } from "@packages/backend/convex/_generated/dataModel";
 import { useMutation, useQuery } from "convex/react";
 import { useEffect, useState } from "react";
 
@@ -21,6 +21,8 @@ import HejnoTab from "./dashboard/HejnoTab";
 import PrehladTab from "./dashboard/PrehladTab";
 import RodinaTab from "./dashboard/RodinaTab";
 import Logo from "./common/Logo";
+import ConfirmDialog from "@/components/ui/confirm-dialog";
+import { Entry, Chicken, DashboardData, EntryType, ExpenseReason } from "@/lib/types";
 
 interface DashboardProps {
   orgId: string;
@@ -30,11 +32,8 @@ interface DashboardProps {
 export default function Dashboard({ orgId, orgName }: DashboardProps) {
   const { memberships } = useOrganization({ memberships: { pageSize: 20, keepPreviousData: true } });
   const { user } = useUser();
-  const [currentTab, setCurrentTab] = useState<"prehlad" | "hejno" | "dennik" | "rodina" | any>("prehlad");
+  const [currentTab, setCurrentTab] = useState<"prehlad" | "hejno" | "dennik" | "rodina">("prehlad");
   const [activeModuleId, setActiveModuleId] = useState("vajcia");
-
-  // Fetch modules for this farm
-  const modules = useQuery(api.modules.list, { orgId });
 
   const todayDate = new Date().toLocaleDateString("en-CA");
 
@@ -43,13 +42,13 @@ export default function Dashboard({ orgId, orgName }: DashboardProps) {
     orgId,
     moduleId: activeModuleId,
     today: todayDate,
-  });
+  }) as DashboardData | undefined;
 
   // Fetch all entries for Denník tab
-  const allEntries = useQuery(api.entries.list, { orgId });
+  const allEntries = useQuery(api.entries.list, { orgId }) as Entry[] | undefined;
 
   // Fetch chickens list for Hejno tab
-  const chickens = useQuery(api.chickens.list, { orgId });
+  const chickens = useQuery(api.chickens.list, { orgId }) as Chicken[] | undefined;
 
   // Mutations
   const upsertEntry = useMutation(api.entries.upsert);
@@ -59,20 +58,39 @@ export default function Dashboard({ orgId, orgName }: DashboardProps) {
   const deleteChicken = useMutation(api.chickens.remove);
   const updateChickenCount = useMutation(api.chickens.updateCount);
 
-  // Form State (Logger)
+  // Form State (Logger date tracking)
   const [selectedDate, setSelectedDate] = useState("");
-  const [value, setValue] = useState(0);
-  const [note, setNote] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [successMsg, setSuccessMsg] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
 
   // Edit Dialog State
   const [editDialogOpen, setEditDialogOpen] = useState(false);
-  const [editingEntry, setEditingEntry] = useState<any>(null);
+  const [editingEntry, setEditingEntry] = useState<Entry | null>(null);
   const [editValue, setEditValue] = useState(0);
   const [editNote, setEditNote] = useState("");
+  const [editReason, setEditReason] = useState<ExpenseReason>("predaj");
   const [isUpdatingEntry, setIsUpdatingEntry] = useState(false);
+
+  // Confirm Dialog State
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [confirmTitle, setConfirmTitle] = useState("");
+  const [confirmDescription, setConfirmDescription] = useState("");
+  const [confirmAction, setConfirmAction] = useState<(() => void) | null>(null);
+  const [confirmVariant, setConfirmVariant] = useState<"danger" | "default">("default");
+
+  const triggerConfirm = (
+    title: string,
+    description: string,
+    onConfirm: () => void,
+    variant: "danger" | "default" = "default"
+  ) => {
+    setConfirmTitle(title);
+    setConfirmDescription(description);
+    setConfirmAction(() => onConfirm);
+    setConfirmVariant(variant);
+    setConfirmOpen(true);
+  };
 
   // Dialog (Add Chicken) state
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -91,26 +109,13 @@ export default function Dashboard({ orgId, orgName }: DashboardProps) {
     setHatchedDateInput(todayDate);
   }, [todayDate]);
 
-  // Update value state when user changes date (to load existing value if any from allEntries)
-  useEffect(() => {
-    if (allEntries && selectedDate) {
-      const match = allEntries.find(
-        (e) => e.date === selectedDate && e.moduleId === activeModuleId
-      );
-      if (match) {
-        setValue(match.value);
-        setNote(match.note || "");
-      } else {
-        setValue(0);
-        setNote("");
-      }
-    }
-  }, [selectedDate, allEntries, activeModuleId]);
-
-  const handleSave = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!selectedDate) return;
-
+  const handleSave = async (args: {
+    value: number;
+    note: string;
+    type: EntryType;
+    reason?: ExpenseReason;
+    date: string;
+  }) => {
     setIsSubmitting(true);
     setSuccessMsg("");
     setErrorMsg("");
@@ -119,9 +124,11 @@ export default function Dashboard({ orgId, orgName }: DashboardProps) {
       await upsertEntry({
         orgId,
         moduleId: activeModuleId,
-        date: selectedDate,
-        value,
-        note: note.trim() || undefined,
+        date: args.date,
+        value: args.value,
+        note: args.note.trim() || undefined,
+        type: args.type,
+        reason: args.reason,
       });
 
       setSuccessMsg("Záznam uložený do denníka.");
@@ -132,6 +139,14 @@ export default function Dashboard({ orgId, orgName }: DashboardProps) {
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const handleStartEdit = (entry: Entry) => {
+    setEditingEntry(entry);
+    setEditValue(entry.value);
+    setEditNote(entry.note || "");
+    setEditReason(entry.reason || "predaj");
+    setEditDialogOpen(true);
   };
 
   const handleUpdateEntry = async (e: React.FormEvent) => {
@@ -146,12 +161,14 @@ export default function Dashboard({ orgId, orgName }: DashboardProps) {
         date: editingEntry.date,
         value: editValue,
         note: editNote.trim() || undefined,
+        type: editingEntry.type || "income",
+        reason: editingEntry.type === "expense" ? editReason : undefined,
       });
       setEditDialogOpen(false);
       setEditingEntry(null);
     } catch (err) {
       console.error(err);
-      alert("Chyba pri aktualizácii záznamu.");
+      setErrorMsg("Chyba pri aktualizácii záznamu.");
     } finally {
       setIsUpdatingEntry(false);
     }
@@ -217,7 +234,7 @@ export default function Dashboard({ orgId, orgName }: DashboardProps) {
       setDialogOpen(false);
     } catch (err) {
       console.error(err);
-      alert("Chyba pri pridávaní do hejna.");
+      setErrorMsg("Chyba pri pridávaní do hejna.");
     } finally {
       setIsSavingChicken(false);
     }
@@ -225,51 +242,68 @@ export default function Dashboard({ orgId, orgName }: DashboardProps) {
 
   const handleIncrementChicken = async (chickenId: string, currentCount: number) => {
     try {
-      await updateChickenCount({ orgId, id: chickenId as any, count: currentCount + 1 });
+      await updateChickenCount({ orgId, id: chickenId as Id<"chickens">, count: currentCount + 1 });
     } catch (err) {
       console.error(err);
-      alert("Chyba pri zmene stavu.");
+      setErrorMsg("Chyba pri zmene stavu.");
     }
   };
 
   const handleDecrementChicken = async (chickenId: string, currentCount: number) => {
     if (currentCount <= 1) {
-      if (window.confirm("Naozaj chcete odstrániť toto plemeno z hejna?")) {
-        try {
-          await deleteChicken({ orgId, id: chickenId as any });
-        } catch (err) {
-          console.error(err);
-          alert("Chyba pri odstraňovaní z hejna.");
-        }
-      }
+      triggerConfirm(
+        "Odstrániť plemeno?",
+        "Naozaj chcete odstrániť toto plemeno z hejna?",
+        async () => {
+          try {
+            await deleteChicken({ orgId, id: chickenId as Id<"chickens"> });
+          } catch (err) {
+            console.error(err);
+            setErrorMsg("Chyba pri odstraňovaní z hejna.");
+          }
+        },
+        "danger"
+      );
       return;
     }
     try {
-      await updateChickenCount({ orgId, id: chickenId as any, count: currentCount - 1 });
+      await updateChickenCount({ orgId, id: chickenId as Id<"chickens">, count: currentCount - 1 });
     } catch (err) {
       console.error(err);
-      alert("Chyba pri zmene stavu.");
+      setErrorMsg("Chyba pri zmene stavu.");
     }
   };
 
   const handleDeleteChicken = async (chickenId: string) => {
-    if (!window.confirm("Naozaj chcete vymazať toto plemeno z hejna?")) return;
-    try {
-      await deleteChicken({ orgId, id: chickenId as any });
-    } catch (err) {
-      console.error(err);
-      alert("Chyba pri odstraňovaní z hejna.");
-    }
+    triggerConfirm(
+      "Vymazať plemeno?",
+      "Naozaj chcete vymazať toto plemeno z hejna?",
+      async () => {
+        try {
+          await deleteChicken({ orgId, id: chickenId as Id<"chickens"> });
+        } catch (err) {
+          console.error(err);
+          setErrorMsg("Chyba pri odstraňovaní z hejna.");
+        }
+      },
+      "danger"
+    );
   };
 
   const handleDeleteEntry = async (entryId: string) => {
-    if (!window.confirm("Naozaj chcete vymazať tento záznam z denníka?")) return;
-    try {
-      await deleteEntry({ orgId, id: entryId as any });
-    } catch (err) {
-      console.error(err);
-      alert("Chyba pri mazaní záznamu.");
-    }
+    triggerConfirm(
+      "Vymazať záznam?",
+      "Naozaj chcete vymazať tento záznam z denníka?",
+      async () => {
+        try {
+          await deleteEntry({ orgId, id: entryId as Id<"entries"> });
+        } catch (err) {
+          console.error(err);
+          setErrorMsg("Chyba pri mazaní záznamu.");
+        }
+      },
+      "danger"
+    );
   };
 
   return (
@@ -278,6 +312,35 @@ export default function Dashboard({ orgId, orgName }: DashboardProps) {
       <div className="w-full sticky top-3 sm:top-4 z-30 px-3 sm:px-0">
         <header className="mx-auto max-w-5xl bg-bg-surface/90 backdrop-blur-md rounded-2xl py-3 px-4 sm:px-5 flex items-center justify-between h-18 border-none">
           <Logo />
+          
+          {/* Navigation Tabs Header - Desktop (Capsule / Pill Style, Integrated in Header) */}
+          <div className="hidden md:flex bg-bg-base/50 p-1 rounded-xl gap-1 shrink-0">
+            {[
+              { id: "prehlad", label: "Prehľad", icon: Activity },
+              { id: "hejno", label: "Hejno", icon: Layers },
+              { id: "dennik", label: "Denník", icon: BookOpen },
+              { id: "rodina", label: "Rodina", icon: Users },
+            ].map((tab) => {
+              const Icon = tab.icon;
+              const active = currentTab === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => setCurrentTab(tab.id as any)}
+                  className={cn(
+                    "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-150 cursor-pointer border-none select-none",
+                    active
+                      ? "bg-accent-primary text-white shadow-sm"
+                      : "text-text-muted hover:text-text-primary hover:bg-bg-base/30"
+                  )}
+                >
+                  <Icon className="h-3.5 w-3.5 shrink-0" />
+                  {tab.label}
+                </button>
+              );
+            })}
+          </div>
+
           <div className="flex items-center gap-3.5">
             <OrganizationSwitcher
               hidePersonal={true}
@@ -298,18 +361,9 @@ export default function Dashboard({ orgId, orgName }: DashboardProps) {
 
       {/* Main Content */}
       <main className="mx-auto max-w-5xl px-4 mt-6 flex flex-col gap-6">
-        {/* Title Section */}
-        <div className="flex flex-col gap-1">
-          <h2 className="font-nunito text-2xl sm:text-3xl font-semibold tracking-tight text-text-primary">
-            {orgName}
-          </h2>
-          <p className="text-xs sm:text-sm text-text-muted font-medium tracking-wide uppercase">
-            Zápisník hospodárstva
-          </p>
-        </div>
 
-        {/* Navigation Tabs Header - Capsule / Pill Style */}
-        <div className="bg-bg-surface p-1 rounded-2xl flex gap-1.5 overflow-x-auto scrollbar-none flex-nowrap shrink-0">
+        {/* Navigation Tabs Header - Mobile Sticky Bottom Bar (Floating Bubble Pill) */}
+        <div className="md:hidden fixed bottom-6 left-4 right-4 bg-bg-surface/95 backdrop-blur-md border border-border-default/40 py-2.5 px-3 z-40 flex items-center justify-around rounded-full max-w-sm mx-auto">
           {[
             { id: "prehlad", label: "Prehľad", icon: Activity },
             { id: "hejno", label: "Hejno", icon: Layers },
@@ -322,15 +376,24 @@ export default function Dashboard({ orgId, orgName }: DashboardProps) {
               <button
                 key={tab.id}
                 onClick={() => setCurrentTab(tab.id as any)}
-                className={cn(
-                  "flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-200 whitespace-nowrap shrink-0 cursor-pointer border-none",
-                  active
-                    ? "bg-accent-primary text-white"
-                    : "text-text-muted hover:text-text-primary hover:bg-bg-base/50"
-                )}
+                className="flex flex-col items-center gap-0.5 flex-1 py-0.5 cursor-pointer border-none bg-transparent select-none text-center"
               >
-                <Icon className="h-4.5 w-4.5 shrink-0" />
-                {tab.label}
+                <div
+                  className={cn(
+                    "flex items-center justify-center w-12 h-7 rounded-full transition-all duration-200",
+                    active ? "bg-accent-light/85 text-accent-primary" : "text-text-muted hover:text-text-primary"
+                  )}
+                >
+                  <Icon className="h-4.5 w-4.5 shrink-0" />
+                </div>
+                <span
+                  className={cn(
+                    "text-[9px] font-bold tracking-wider transition-colors uppercase font-inter",
+                    active ? "text-accent-primary" : "text-text-muted"
+                  )}
+                >
+                  {tab.label}
+                </span>
               </button>
             );
           })}
@@ -348,10 +411,6 @@ export default function Dashboard({ orgId, orgName }: DashboardProps) {
             selectedDate={selectedDate}
             setSelectedDate={setSelectedDate}
             todayDate={todayDate}
-            value={value}
-            setValue={setValue}
-            note={note}
-            setNote={setNote}
             isSubmitting={isSubmitting}
             successMsg={successMsg}
             errorMsg={errorMsg}
@@ -395,10 +454,7 @@ export default function Dashboard({ orgId, orgName }: DashboardProps) {
             todayDate={todayDate}
             userId={user?.id}
             handleDeleteEntry={handleDeleteEntry}
-            setEditingEntry={setEditingEntry}
-            setEditValue={setEditValue}
-            setEditNote={setEditNote}
-            setEditDialogOpen={setEditDialogOpen}
+            onStartEdit={handleStartEdit}
             memberships={memberships}
             user={user}
           />
@@ -424,8 +480,22 @@ export default function Dashboard({ orgId, orgName }: DashboardProps) {
         setEditValue={setEditValue}
         editNote={editNote}
         setEditNote={setEditNote}
+        editReason={editReason}
+        setEditReason={setEditReason}
         isUpdatingEntry={isUpdatingEntry}
         onSubmit={handleUpdateEntry}
+      />
+
+      {/* Confirm Dialog */}
+      <ConfirmDialog
+        open={confirmOpen}
+        onOpenChange={setConfirmOpen}
+        title={confirmTitle}
+        description={confirmDescription}
+        variant={confirmVariant}
+        onConfirm={() => {
+          if (confirmAction) confirmAction();
+        }}
       />
     </div>
   );

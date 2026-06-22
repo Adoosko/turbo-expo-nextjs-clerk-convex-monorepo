@@ -24,7 +24,7 @@ export default function Home() {
   if (!organization) {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center bg-bg-base px-4 py-12">
-        <div className="w-full max-w-md rounded-2xl border border-border-default bg-bg-surface p-8 shadow-sm">
+        <div className="w-full max-w-md rounded-2xl border border-border-default bg-bg-surface p-8 shadow-none">
           <div className="flex flex-col items-center text-center">
             {/* Logo/Icon placeholder using Lucide-style markup */}
             <div className="mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-accent-light text-accent-primary">

@@ -10,16 +10,19 @@ import {
 import { Input } from "@/components/ui/input";
 import { Loader2 } from "lucide-react";
 import React from "react";
+import { Entry, ExpenseReason, EXPENSE_REASONS } from "@/lib/types";
 import { formatDateSlovakFull } from "./utils";
 
 interface EditEntryDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  editingEntry: any;
+  editingEntry: Entry | null;
   editValue: number;
   setEditValue: React.Dispatch<React.SetStateAction<number>>;
   editNote: string;
   setEditNote: React.Dispatch<React.SetStateAction<string>>;
+  editReason: ExpenseReason;
+  setEditReason: (r: ExpenseReason) => void;
   isUpdatingEntry: boolean;
   onSubmit: (e: React.FormEvent) => void;
 }
@@ -32,22 +35,27 @@ export default function EditEntryDialog({
   setEditValue,
   editNote,
   setEditNote,
+  editReason,
+  setEditReason,
   isUpdatingEntry,
   onSubmit,
 }: EditEntryDialogProps) {
+  const isIncome = !editingEntry || !editingEntry.type || editingEntry.type === "income";
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[425px] bg-bg-surface rounded-3xl p-6 shadow-[0_16px_40px_rgba(35,40,36,0.03)] border-0">
+      <DialogContent className="sm:max-w-[425px] bg-bg-surface rounded-3xl p-6 border border-border-default/30 shadow-none">
         <DialogHeader>
-          <DialogTitle className="font-nunito text-xl font-semibold text-text-primary">
+          <DialogTitle className="font-inter text-lg font-semibold text-text-primary">
             Upraviť záznam
           </DialogTitle>
           <DialogDescription className="text-sm font-medium text-text-muted">
-            Upravte znášku pre deň {editingEntry && formatDateSlovakFull(editingEntry.date)}.
+            Upravte {isIncome ? "znášku" : "výdaj"} pre deň {editingEntry && formatDateSlovakFull(editingEntry.date)}.
           </DialogDescription>
         </DialogHeader>
         {editingEntry && (
           <form onSubmit={onSubmit} className="flex flex-col gap-4 mt-4">
+            
             {/* Value Stepper */}
             <div className="flex flex-col gap-1.5">
               <label className="text-xs font-medium text-text-muted uppercase tracking-wider">
@@ -66,7 +74,7 @@ export default function EditEntryDialog({
                   min="0"
                   value={editValue}
                   onChange={(e) => setEditValue(Math.max(0, parseInt(e.target.value) || 0))}
-                  className="w-20 text-center font-nunito text-3xl font-semibold text-text-primary bg-transparent focus:ring-0 focus:outline-hidden [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none select-all"
+                  className="w-20 text-center font-inter text-3xl font-bold tabular-nums text-text-primary bg-transparent focus:ring-0 focus:outline-hidden [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none select-all"
                 />
                 <Button
                   type="button"
@@ -77,6 +85,26 @@ export default function EditEntryDialog({
                 </Button>
               </div>
             </div>
+
+            {/* Reason selector (only for expenses) */}
+            {!isIncome && (
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-medium text-text-muted uppercase tracking-wider">
+                  Dôvod výdaja
+                </label>
+                <select
+                  value={editReason}
+                  onChange={(e) => setEditReason(e.target.value as ExpenseReason)}
+                  className="w-full bg-bg-base/60 rounded-xl px-4 py-2.5 text-base text-text-primary focus:ring-1 focus:ring-accent-primary border-none cursor-pointer font-medium h-12"
+                >
+                  {EXPENSE_REASONS.map((r) => (
+                    <option key={r.value} value={r.value} className="bg-bg-surface text-text-primary">
+                      {r.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
 
             {/* Note input */}
             <div className="flex flex-col gap-1.5">

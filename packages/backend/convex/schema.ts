@@ -17,6 +17,8 @@ export default defineSchema({
     date: v.string(), // YYYY-MM-DD
     value: v.number(),
     note: v.optional(v.string()),
+    type: v.optional(v.string()), // "income" | "expense"
+    reason: v.optional(v.string()), // "predaj" | "darovanie" | "spotreba" | "kazene"
     loggedBy: v.string(), // Clerk user ID
     updatedAt: v.optional(v.number()),
   }).index("by_orgId_moduleId_date", ["orgId", "moduleId", "date"]),

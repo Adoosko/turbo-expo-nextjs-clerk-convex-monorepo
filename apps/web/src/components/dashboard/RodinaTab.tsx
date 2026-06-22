@@ -12,7 +12,7 @@ export default function RodinaTab({ memberships, user }: RodinaTabProps) {
   return (
     <div className="flex flex-col gap-6 animate-fade-in">
       <div className="flex flex-col">
-        <h3 className="font-nunito text-2xl font-semibold text-text-primary flex items-center gap-2">
+        <h3 className="font-nunito text-xl font-extrabold text-text-primary flex items-center gap-2">
           <Users className="h-5 w-5 text-accent-primary" />
           Členovia rodiny
         </h3>
@@ -24,7 +24,7 @@ export default function RodinaTab({ memberships, user }: RodinaTabProps) {
       {memberships?.data === undefined ? (
         <div className="h-32 w-full animate-pulse rounded-2xl bg-bg-surface" />
       ) : (
-        <Card className="bg-bg-surface rounded-2xl overflow-hidden border-0 shadow-[0_16px_40px_rgba(35,40,36,0.03)]">
+        <Card className="bg-bg-surface rounded-2xl overflow-hidden border border-border-default/30 shadow-none">
           <CardContent className="p-0">
             {memberships?.data?.map((membership: any, idx: number) => {
               const member = membership.publicUserData;
@@ -46,7 +46,7 @@ export default function RodinaTab({ memberships, user }: RodinaTabProps) {
                       />
                     ) : (
                       <div className="w-11 h-11 rounded-full bg-accent-light flex items-center justify-center shrink-0">
-                        <span className="font-nunito text-base font-semibold text-accent-primary">
+                        <span className="font-inter text-base font-bold text-accent-primary">
                           {initials}
                         </span>
                       </div>

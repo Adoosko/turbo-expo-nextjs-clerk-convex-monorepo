@@ -4,14 +4,29 @@ Aktualizuj tento súbor po každej zmysluplnej implementačnej zmene.
 
 ## Aktuálna fáza (Current Phase)
 
-Fáza 2: Webová aplikácia & Integrácia Convex API — DOKONČENÉ.
-Hlavné funkcie (tabs navigácia, hejno, denník, rodina) sú plne pripravené a otypované.
+Fáza 1 (vylepšenia): Skladový systém, Denník refaktor & Code Quality — DOKONČENÉ.
+Webová aplikácia a backend sú plne aktualizované o evidenciu skladu a výdajov s prísnym otypovaním.
 
 ## Aktuálny cieľ (Current Goal)
 
-Implementovať mobilnú aplikáciu (Expo) so zdieľanou Convex integráciou, offline SQLite frontou a synchronizáciou cez NetInfo.
+Pripraviť nasadenie a pokračovať na mobilnej aplikácii (Expo) so zdieľanou Convex integráciou a offline SQLite synchronizáciou.
 
 ## Hotové (Completed)
+
+- **Vizuálny redizajn bento kariet & Kalendár bez layout shiftov (2026-06-22)**:
+  - Odstránili sme layout shift v kalendári (`MonthlyCalendar.tsx`) — aktívny deň už nemení veľkosť písma (`text-xs` zostáva zachovaný) a prechody sa namiesto `ring` prepínajú cez stabilný `box-shadow`.
+  - Presunuli sme bento karty na prehľade (Mesačný kalendár, Týždenný vývoj, Stav hejna) na čisté svetlé pozadie `bg-bg-surface border border-border-default/30 shadow-none` pre prémiový vzhľad.
+- **Štatistika Rekord & Mobilné štatistiky v Denníku (2026-06-22)**:
+  - Pridali sme novú metriku „Rekord“ (historické maximum znášky v jeden deň) do prehľadového Quick Stats Bento gridu ako štvrtú dlaždicu.
+  - V tabuľkovom prehľade Denníka sme sprístupnili štatistiky „Priemer“ a „Rekord“ aj pre mobilné zobrazenie (odstránením responzívnych obmedzení z panela nástrojov).
+- **Vizuálne ikony v Denníku (2026-06-22)**: Pridali sme miniatúru obrázka vajca (`/egg.png`) k zobrazeniu množstva (ks) v riadkoch tabuľky Denníka (pre desktop aj mobil), čím sme zvýšili vizuálnu atraktivitu a prepojili tabuľku s celkovým dizajnom (len pre modul 'vajcia').
+- **Denník Redesign & Mobile Sticky Bottom Navigation (2026-06-22)**:
+  - Redizajnovali sme Denník na modernú, kompaktnú dátovú tabuľku so zebra stripingom, hover efektmi, dynamic stat barom a staggered načítavaním riadkov.
+  - Vytvorili sme responzívnu navigáciu: na mobiloch (`md:hidden`) sa horné capsule menu nahradí fixnou spodnou navigačnou lištou so stredovými ikonami a malými popiskami, čo výrazne uľahčuje mobilné používanie. Na desktope zostáva pôvodné pill-menu.
+- **Skladový systém & Výdaje (2026-06-22)**: Implementovali sme skladový systém vajec s evidenciou príjmov (znáška) a výdajov (dôvody: predaj, darovanie, spotreba, kazené). Upravili sme schému entries o type/reason s unikátnosťou (orgId, moduleId, date, type).
+- **HeroLoggerCard & Prehľad (2026-06-22)**: Prepracovali sme HeroLoggerCard na dominantné zobrazenie stavu skladu a dve akčné vetvy (+ Znáška, − Výdaj) s inline stepper formulármi. Pridali sme stav skladu do hlavných štatistík PrehladTab.
+- **Denník Refaktor & Oprava Vyhľadávania (2026-06-22)**: Zjednodušili sme Denník na čistý plochý layout pod mesačnými hlavičkami (odstránené timeline linky a týždenné predelenia). Záznamy sú farebne odlíšené (zelená príjem, jantárová výdaj s dôvodom). Vyhľadávanie teraz komplexne prehľadáva autorov, dátumy, množstvá a typy, a všetky zobrazené štatistiky v denníku sa dynamicky prepočítavajú podľa filtrov.
+- **Zdieľané Komponenty & Code Quality (2026-06-22)**: Vytvorili sme zdieľané typy (types.ts), ModuleSelector, EggIcon a potvrdzovací dialóg ConfirmDialog. Odstránili sme @ts-nocheck a any typy. Pnpm typecheck a build prebehol bez chýb.
 
 - Context súbory napísané, finalizované a zosúladené s verziami (pnpm workspaces, Next.js 16, Expo SDK 55).
 - Úspešná inštalácia dependencií v celom monorepe vrátane `@radix-ui/react-dialog` pre shadcn Dialog.

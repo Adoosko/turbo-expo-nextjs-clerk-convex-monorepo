@@ -7,37 +7,14 @@ interface Props {
 }
 
 const Logo = ({ isMobile, hideTextOnMobile = true }: Props) => {
-  const shouldHideText = isMobile !== undefined ? isMobile : hideTextOnMobile;
-
   return (
     <Link href="/">
-      <div className="flex gap-2 items-center cursor-pointer select-none">
-        {/* Logo Icon */}
-        <div className="h-8 w-8 rounded-xl bg-accent-primary flex items-center justify-center text-white shrink-0">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="16"
-            height="16"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="3"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z" />
-            <path d="m10 10-2 2 2 2" />
-            <path d="m14 14 2-2-2-2" />
-          </svg>
-        </div>
-        {/* Text Logo */}
-        <span
-          className={`font-nunito text-xl font-bold tracking-tight flex items-baseline gap-1 ${
-            shouldHideText ? "hidden sm:flex" : "flex"
-          }`}
-        >
-          <span className="text-accent-primary">Farma</span>
+      <div className="flex items-center cursor-pointer select-none group">
+        {/* Text Logo Only */}
+        <span className="font-nunito text-xl sm:text-2xl font-extrabold tracking-tight flex items-baseline select-none">
+          <span className="text-accent-primary transition-colors duration-200 group-hover:text-accent-primary/80">Farma</span>
           <span className="text-text-primary">Finik</span>
+          <span className="w-1.5 h-1.5 rounded-full bg-accent-warm ml-1" />
         </span>
       </div>
     </Link>

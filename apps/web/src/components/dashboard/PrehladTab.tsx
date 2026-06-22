@@ -9,6 +9,8 @@ import { cn } from "@/lib/utils";
 import React from "react";
 import HeroLoggerCard from "./HeroLoggerCard";
 import MonthlyCalendar from "./MonthlyCalendar";
+import ModuleSelector from "./ModuleSelector";
+import { Entry, Chicken, DashboardData, EntryType, ExpenseReason } from "@/lib/types";
 import {
   formatDateSlovakFull,
   getChickenDetails,
@@ -20,27 +22,31 @@ import {
   getExpectedLayingDate,
 } from "./utils";
 
+
 interface PrehladTabProps {
   orgId: string;
   activeModuleId: string;
   setActiveModuleId: (id: string) => void;
-  dashboardData: any;
-  allEntries: any[] | undefined;
-  chickens: any[] | undefined;
+  dashboardData: DashboardData | undefined;
+  allEntries: Entry[] | undefined;
+  chickens: Chicken[] | undefined;
   selectedDate: string;
   setSelectedDate: (date: string) => void;
   todayDate: string;
-  value: number;
-  setValue: React.Dispatch<React.SetStateAction<number>>;
-  note: string;
-  setNote: (note: string) => void;
   isSubmitting: boolean;
   successMsg: string;
   errorMsg: string;
-  handleSave: (e: React.FormEvent) => void;
+  handleSave: (args: {
+    value: number;
+    note: string;
+    type: EntryType;
+    reason?: ExpenseReason;
+    date: string;
+  }) => Promise<void>;
 }
 
 export default function PrehladTab({
+  orgId,
   activeModuleId,
   setActiveModuleId,
   dashboardData,
@@ -49,10 +55,6 @@ export default function PrehladTab({
   selectedDate,
   setSelectedDate,
   todayDate,
-  value,
-  setValue,
-  note,
-  setNote,
   isSubmitting,
   successMsg,
   errorMsg,
@@ -74,9 +76,21 @@ export default function PrehladTab({
     : 0;
   const activeBreeds = chickens ? chickens.filter((c) => (c.count || 0) > 0) : [];
 
-  const selectedMatch = allEntries?.find(
-    (e) => e.date === selectedDate && e.moduleId === activeModuleId
-  );
+  const maxIncome = React.useMemo(() => {
+    if (!allEntries) return 0;
+    const incomeEntries = allEntries.filter(
+      (e) => e.moduleId === activeModuleId && (!e.type || e.type === "income")
+    );
+    return incomeEntries.length > 0 ? Math.max(...incomeEntries.map((e) => e.value)) : 0;
+  }, [allEntries, activeModuleId]);
+
+  const selectedIncomeEntry = allEntries?.find(
+    (e) => e.date === selectedDate && e.moduleId === activeModuleId && (!e.type || e.type === "income")
+  ) || null;
+
+  const selectedExpenseEntry = allEntries?.find(
+    (e) => e.date === selectedDate && e.moduleId === activeModuleId && e.type === "expense"
+  ) || null;
 
   const getThisWeekTotal = () => {
     if (!dashboardData) return 0;
@@ -88,12 +102,12 @@ export default function PrehladTab({
     monday.setHours(0, 0, 0, 0);
 
     return dashboardData.recentEntries
-      .filter((e: any) => {
+      .filter((e) => {
         const [y, m, d] = e.date.split("-").map(Number);
         const entryDate = new Date(y, m - 1, d);
-        return entryDate >= monday;
+        return entryDate >= monday && (!e.type || e.type === "income");
       })
-      .reduce((sum: number, e: any) => sum + e.value, 0);
+      .reduce((sum, e) => sum + e.value, 0);
   };
 
   const getThisMonthTotal = () => {
@@ -103,15 +117,16 @@ export default function PrehladTab({
     const currentMonth = now.getMonth();
 
     return dashboardData.recentEntries
-      .filter((e: any) => {
+      .filter((e) => {
         const [y, m, d] = e.date.split("-").map(Number);
         const entryDate = new Date(y, m - 1, d);
         return (
           entryDate.getFullYear() === currentYear &&
-          entryDate.getMonth() === currentMonth
+          entryDate.getMonth() === currentMonth &&
+          (!e.type || e.type === "income")
         );
       })
-      .reduce((sum: number, e: any) => sum + e.value, 0);
+      .reduce((sum, e) => sum + e.value, 0);
   };
 
   const getSparklinePoints = () => {
@@ -122,7 +137,9 @@ export default function PrehladTab({
       const d = new Date();
       d.setDate(d.getDate() - i);
       const dateStr = d.toLocaleDateString("en-CA");
-      const match = dashboardData.recentEntries.find((e: any) => e.date === dateStr);
+      const match = dashboardData.recentEntries.find(
+        (e) => e.date === dateStr && (!e.type || e.type === "income")
+      );
       sparklineData.push({
         date: dateStr,
         value: match ? match.value : 0,
@@ -157,56 +174,7 @@ export default function PrehladTab({
   return (
     <div className="flex flex-col gap-6">
       {/* Modular Modules Selector */}
-      <div className="flex flex-wrap gap-2">
-        <button
-          onClick={() => setActiveModuleId("vajcia")}
-          className={cn(
-            "flex items-center gap-3 px-4 py-2.5 rounded-xl transition-all duration-200 text-left cursor-pointer",
-            activeModuleId === "vajcia"
-              ? "bg-accent-primary text-white"
-              : "bg-bg-surface hover:bg-bg-surface-raised text-text-muted"
-          )}
-        >
-          <div
-            className={cn(
-              "flex h-6 w-6 items-center justify-center rounded-lg",
-              activeModuleId === "vajcia" ? "text-amber-100" : "text-text-muted"
-            )}
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="14"
-              height="14"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2.5"
-              className="fill-current"
-            >
-              <path d="M12 2C6.5 2 2 10 2 15a10 10 0 0 0 20 0c0-5-4.5-13-10-13Z" />
-            </svg>
-          </div>
-          <span className="font-medium text-sm">Sliepky</span>
-        </button>
-
-        <div className="flex items-center gap-3 px-4 py-2.5 rounded-xl bg-bg-surface/40 text-text-muted/40 select-none">
-          <div className="flex h-5 w-5 items-center justify-center text-text-muted/40">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="14"
-              height="14"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2.5"
-            >
-              <path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z" />
-              <circle cx="12" cy="12" r="3" />
-            </svg>
-          </div>
-          <span className="font-medium text-sm">Záhrada (V2)</span>
-        </div>
-      </div>
+      <ModuleSelector activeModuleId={activeModuleId} setActiveModuleId={setActiveModuleId} />
 
       {/* Hero Action Area */}
       <div className="w-full">
@@ -223,15 +191,15 @@ export default function PrehladTab({
           </div>
         )}
         <HeroLoggerCard
-          value={value}
-          setValue={setValue}
-          note={note}
-          setNote={setNote}
+          activeModuleId={activeModuleId}
+          stock={dashboardData ? dashboardData.stock : 0}
+          todayIncomeEntry={selectedIncomeEntry}
+          todayExpenseEntry={selectedExpenseEntry}
           isSubmitting={isSubmitting}
           successMsg={successMsg}
           errorMsg={errorMsg}
-          onSubmit={handleSave}
-          todayMatch={selectedMatch}
+          onSave={(args) => handleSave({ ...args, date: selectedDate })}
+          selectedDate={selectedDate}
         />
       </div>
 
@@ -241,23 +209,32 @@ export default function PrehladTab({
         {/* Left Column in Grid (Stats & Graph) */}
         <div className="flex flex-col gap-6 lg:col-span-1">
           {/* Quick Stats Bento */}
-          <Card className="bg-bg-surface rounded-2xl overflow-hidden shadow-none border-0">
+          <Card className="bg-bg-surface rounded-2xl overflow-hidden border border-border-default/30 shadow-none">
             <CardContent className="p-5">
-              <div className="grid grid-cols-2 gap-3 text-left">
-                <div className="rounded-xl bg-bg-base/60 p-4 flex flex-col">
-                  <span className="text-xs font-medium text-text-muted/80 uppercase tracking-wider">
-                    Tento týždeň
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-left">
+                <div className="rounded-xl bg-bg-base/40 p-4 flex flex-col border border-border-default/10">
+                  <span className="text-[11px] font-semibold text-text-muted/80 uppercase tracking-wider">
+                    Sklad
                   </span>
-                  <span className="font-nunito text-2xl font-semibold text-accent-primary mt-1">
+                  <span className="font-inter text-2xl font-bold tabular-nums text-accent-primary mt-1">
+                    {dashboardData ? dashboardData.stock : 0}{" "}
+                    <span className="text-sm font-medium font-inter text-text-muted">ks</span>
+                  </span>
+                </div>
+                <div className="rounded-xl bg-bg-base/40 p-4 flex flex-col border border-border-default/10">
+                  <span className="text-[11px] font-semibold text-text-muted/80 uppercase tracking-wider">
+                    Týždeň
+                  </span>
+                  <span className="font-inter text-2xl font-bold tabular-nums text-accent-primary mt-1">
                     {getThisWeekTotal()}{" "}
                     <span className="text-sm font-medium font-inter text-text-muted">ks</span>
                   </span>
                 </div>
-                <div className="rounded-xl bg-bg-base/60 p-4 flex flex-col">
-                  <span className="text-xs font-medium text-text-muted/80 uppercase tracking-wider">
-                    Tento mesiac
+                <div className="rounded-xl bg-bg-base/40 p-4 flex flex-col border border-border-default/10">
+                  <span className="text-[11px] font-semibold text-text-muted/80 uppercase tracking-wider">
+                    Mesiac
                   </span>
-                  <span className="font-nunito text-2xl font-semibold text-accent-primary mt-1">
+                  <span className="font-inter text-2xl font-bold tabular-nums text-accent-primary mt-1">
                     {getThisMonthTotal()}{" "}
                     <span className="text-sm font-medium font-inter text-text-muted">ks</span>
                   </span>
@@ -267,10 +244,10 @@ export default function PrehladTab({
           </Card>
 
           {/* Trend Graph Bento */}
-          <Card className="bg-bg-surface rounded-2xl overflow-hidden shadow-none border-0">
+          <Card className="bg-bg-surface rounded-2xl overflow-hidden border border-border-default/30 shadow-none">
             <CardHeader className="p-5 pb-1 flex flex-row items-center justify-between">
               <div>
-                <CardTitle className="font-nunito text-base font-semibold text-text-primary">
+                <CardTitle className="font-nunito text-base font-extrabold text-text-primary">
                   Týždenný vývoj
                 </CardTitle>
                 <CardDescription className="text-xs font-normal text-text-muted">
@@ -282,7 +259,7 @@ export default function PrehladTab({
               {dashboardData === undefined ? (
                 <div className="h-16 w-full animate-pulse bg-bg-base rounded-xl" />
               ) : (
-                <div className="relative w-full h-[70px] mt-1">
+                <div className="relative w-full h-[85px] mt-1 select-none">
                   <svg
                     className="w-full h-full overflow-visible"
                     viewBox="0 0 300 80"
@@ -290,38 +267,72 @@ export default function PrehladTab({
                   >
                     <defs>
                       <linearGradient id="spark-grad" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor="var(--accent-primary)" stopOpacity="0.2" />
+                        <stop offset="0%" stopColor="var(--accent-primary)" stopOpacity="0.25" />
                         <stop offset="100%" stopColor="var(--accent-primary)" stopOpacity="0.0" />
                       </linearGradient>
+                      <filter id="shadow-3d" x="-20%" y="-20%" width="140%" height="140%">
+                        <feDropShadow dx="0" dy="4" stdDeviation="3" floodColor="#000" floodOpacity="0.15" />
+                      </filter>
+                      <radialGradient id="egg-grad" cx="35%" cy="35%" r="65%">
+                        <stop offset="0%" stopColor="#FFFFFF" />
+                        <stop offset="40%" stopColor="#ECCBA6" />
+                        <stop offset="100%" stopColor="#BA8E60" />
+                      </radialGradient>
                     </defs>
-                    <line x1="0" y1="70" x2="300" y2="70" stroke="var(--bg-base)" strokeWidth="1.5" />
-                    {sparkline.areaPoints && <path d={sparkline.areaPoints} fill="url(#spark-grad)" />}
+                    {/* Background grid lines */}
+                    <line x1="0" y1="12" x2="300" y2="12" stroke="var(--bg-base)" strokeWidth="1" strokeDasharray="3 3" />
+                    <line x1="0" y1="40" x2="300" y2="40" stroke="var(--bg-base)" strokeWidth="1" strokeDasharray="3 3" />
+                    <line x1="0" y1="68" x2="300" y2="68" stroke="var(--bg-base)" strokeWidth="1" />
+                    
+                    {sparkline.areaPoints && (
+                      <path
+                        d={sparkline.areaPoints}
+                        fill="url(#spark-grad)"
+                        className="animate-fade-in"
+                        style={{ animationDelay: "200ms" }}
+                      />
+                    )}
                     {sparkline.points && (
                       <path
                         d={sparkline.points}
                         fill="none"
                         stroke="var(--accent-primary)"
-                        strokeWidth="2.8"
+                        strokeWidth="3.5"
                         strokeLinecap="round"
                         strokeLinejoin="round"
+                        className="animate-draw-path"
+                        filter="url(#shadow-3d)"
                       />
                     )}
                     {sparkline.data.map((pt, i) => (
-                      <g key={i}>
+                      <g key={i} className="group/pt">
                         <circle
                           cx={pt.x}
                           cy={pt.y}
-                          r="3"
-                          fill="var(--bg-surface)"
-                          stroke="var(--accent-primary)"
-                          strokeWidth="2"
+                          r="4"
+                          fill="url(#egg-grad)"
+                          stroke="#BA8E60"
+                          strokeWidth="1"
+                          filter="url(#shadow-3d)"
+                          className="transition-all duration-200 group-hover/pt:r-[5px] group-hover/pt:stroke-[1.5px] cursor-pointer"
                         />
                         {pt.value > 0 && (
                           <text
                             x={pt.x}
-                            y={pt.y - 8}
+                            y={pt.y - 10}
                             textAnchor="middle"
-                            className="font-nunito text-[10px] font-semibold fill-text-muted"
+                            className="font-inter text-[10px] font-bold fill-accent-primary opacity-0 group-hover/pt:opacity-100 transition-opacity duration-200 pointer-events-none"
+                          >
+                            {pt.value}
+                          </text>
+                        )}
+                        {/* Always visible values, styled slightly smaller and lighter */}
+                        {pt.value > 0 && (
+                          <text
+                            x={pt.x}
+                            y={pt.y - 10}
+                            textAnchor="middle"
+                            className="font-inter text-[9px] font-bold tabular-nums fill-text-muted group-hover/pt:hidden pointer-events-none"
                           >
                             {pt.value}
                           </text>
@@ -333,6 +344,8 @@ export default function PrehladTab({
               )}
             </CardContent>
           </Card>
+
+
         </div>
 
         {/* Center & Right Columns in Grid (Calendar & Flock) */}
@@ -347,10 +360,10 @@ export default function PrehladTab({
           />
 
           {/* Flock Status Bento */}
-          <Card className="bg-bg-surface rounded-2xl overflow-hidden shadow-none border-0">
+          <Card className="bg-bg-surface rounded-2xl overflow-hidden border border-border-default/30 shadow-none">
             <CardHeader className="p-5 pb-1 flex flex-row items-center justify-between">
               <div>
-                <CardTitle className="font-nunito text-base font-semibold text-text-primary">
+                <CardTitle className="font-nunito text-base font-extrabold text-text-primary">
                   Stav hejna
                 </CardTitle>
                 <CardDescription className="text-xs font-normal text-text-muted">
@@ -366,11 +379,11 @@ export default function PrehladTab({
                   Kŕdeľ je prázdny. Pridajte prvé sliepky na karte Hejno.
                 </p>
               ) : (
-                <div className="flex flex-col gap-3">
+                <div className="flex flex-col gap-4">
                   {/* Overall stats */}
                   <div className="flex items-baseline justify-between">
                     <span className="text-sm font-semibold text-text-muted">Celkový stav:</span>
-                    <span className="font-nunito text-xl font-bold text-accent-primary">
+                    <span className="font-inter text-xl font-bold tabular-nums text-accent-primary">
                       {totalChickens} ks{" "}
                       <span className="text-xs font-medium font-inter text-text-muted">
                         ({getSlovakPluralHens(totalHens)}, {getSlovakPluralRoosters(totalRoosters)}, {getSlovakPluralChicks(totalChicks)}, {getSlovakPluralDucks(totalDucks)})
@@ -379,7 +392,7 @@ export default function PrehladTab({
                   </div>
 
                   {/* Breed distribution bar */}
-                  <div className="w-full h-2.5 rounded-xl overflow-hidden flex bg-bg-base/70 my-2">
+                  <div className="w-full h-4 rounded-xl overflow-hidden flex bg-[#DCD1C0] my-1 shadow-[inset_0_2px_4px_rgba(0,0,0,0.15)] border border-[#C5B7A1]">
                     {activeBreeds.map((breed) => {
                       const info = getChickenDetails(breed);
                       const pct = totalChickens > 0 ? (breed.count / totalChickens) * 100 : 0;
@@ -388,38 +401,38 @@ export default function PrehladTab({
                           key={breed._id}
                           style={{
                             width: `${pct}%`,
-                            backgroundColor: info.color || "var(--accent-primary)",
+                            backgroundImage: `linear-gradient(to bottom, rgba(255,255,255,0.4) 0%, rgba(255,255,255,0) 40%, rgba(0,0,0,0.1) 100%), linear-gradient(to right, ${info.color || "var(--accent-primary)"}, ${info.color || "var(--accent-primary)"})`,
                           }}
                           title={`${info.name}: ${breed.count} ks (${Math.round(pct)}%)`}
-                          className="h-full transition-all duration-300 first:rounded-l-xl last:rounded-r-xl border-r border-bg-surface/10 last:border-r-0"
+                          className="h-full transition-all duration-300 hover:brightness-110 border-r border-[#00000020] last:border-r-0 cursor-pointer shadow-[inset_0_1px_1px_rgba(255,255,255,0.6)]"
                         />
                       );
                     })}
                   </div>
 
                   {/* Badges list */}
-                  <div className="flex flex-wrap gap-2 mt-1">
+                  <div className="flex flex-wrap gap-2.5 mt-1">
                     {activeBreeds.map((breed) => {
                       const info = getChickenDetails(breed);
                       return (
                         <div
                           key={breed._id}
-                          className="flex items-center gap-2 pl-1.5 pr-3 py-1 rounded-xl bg-bg-base/70 text-xs sm:text-sm font-medium text-text-primary"
+                          className="flex items-center gap-2.5 pl-1.5 pr-3.5 py-1.5 rounded-xl bg-gradient-to-b from-[#F9F7F4] to-[#EAE2D4] text-xs font-semibold text-text-primary shadow-[0_2px_4px_-1px_rgba(0,0,0,0.15)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_4px_6px_-1px_rgba(0,0,0,0.15)] select-none relative overflow-hidden"
                         >
+                          <div className="absolute left-0 top-0 bottom-0 w-[4px]" style={{ backgroundColor: info.color || "var(--accent-primary)" }} />
                           <img
                             src={info.imageUrl}
                             alt={info.name}
-                            className="w-5 h-5 rounded-full object-cover shrink-0 border border-solid"
-                            style={{ borderColor: info.color }}
+                            className="w-5.5 h-5.5 rounded-full object-cover shrink-0 border border-solid border-border-default/30"
                           />
                           <span>{info.name}</span>
                           {breed.presetId === "kuriatko" && breed.hatchedDate && (
                             <span className="text-[10px] text-text-muted font-normal">
-                              ({formatChicksAge(breed.hatchedDate)}, predpoklad znášky: {getExpectedLayingDate(breed.hatchedDate)})
+                              ({formatChicksAge(breed.hatchedDate)})
                             </span>
                           )}
-                          <span className="font-semibold text-accent-primary ml-0.5">
-                             {breed.count} ks
+                          <span className="font-bold text-accent-primary ml-auto">
+                            {breed.count} ks
                           </span>
                         </div>
                       );
