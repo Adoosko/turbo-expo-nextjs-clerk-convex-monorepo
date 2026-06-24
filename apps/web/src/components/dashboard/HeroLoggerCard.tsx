@@ -160,6 +160,16 @@ export default function HeroLoggerCard({
               <div className="w-12" /> {/* Spacer */}
             </div>
 
+            {/* Real-time Egg Tray Preview */}
+            {activeModuleId === "vajcia" && (
+              <div className="mb-5 w-full">
+                <EggTrayVisualizer
+                  stock={stock}
+                  previewStock={activeMode === "income" ? stock + value : Math.max(0, stock - value)}
+                />
+              </div>
+            )}
+
             <form onSubmit={handleSubmit} className="flex flex-col gap-5 w-full max-w-sm mx-auto">
               
               {/* Stepper Widget */}
