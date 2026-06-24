@@ -2,7 +2,6 @@ import { cn } from "@/lib/utils";
 import { ArrowDown, ArrowUp, Filter, Pencil, Search, Trash2 } from "lucide-react";
 import React, { useState, useMemo } from "react";
 import { Entry, EXPENSE_REASON_LABELS } from "@/lib/types";
-import ModuleSelector from "./ModuleSelector";
 import { formatDateSlovakFull, getWeekDayName, formatDateSlovakNumeric, formatDateSlovakShort } from "./utils";
 
 // ─── Types ──────────────────────────────────────────────────
@@ -262,9 +261,6 @@ export default function DennikTab({
   // ─── Render ─────────────────────────────────────────────
   return (
     <div className="flex flex-col gap-5">
-      {/* Module Selector */}
-      <ModuleSelector activeModuleId={activeModuleId} setActiveModuleId={setActiveModuleId} />
-
       {/* ── Toolbar: Stats + Filters ── */}
       <div className="bg-bg-surface rounded-2xl overflow-hidden shadow-none border border-border-default/40 animate-fade-in">
         {/* Inline stat bar */}

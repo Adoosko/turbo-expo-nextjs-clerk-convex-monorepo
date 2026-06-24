@@ -35,7 +35,15 @@ export default function HeroLoggerCard({
   onSave,
   selectedDate,
 }: HeroLoggerCardProps) {
+  const todayIncomeVal = todayIncomeEntry ? todayIncomeEntry.value : 0;
+  const todayExpenseVal = todayExpenseEntry ? todayExpenseEntry.value : 0;
+
   const [activeMode, setActiveMode] = useState<"view" | "income" | "expense">("view");
+
+  // Local state for optimistic updates
+  const [localStock, setLocalStock] = useState(stock);
+  const [localIncome, setLocalIncome] = useState(todayIncomeVal);
+  const [localExpense, setLocalExpense] = useState(todayExpenseVal);
 
   // Stepper values
   const [value, setValue] = useState(0);
@@ -46,6 +54,52 @@ export default function HeroLoggerCard({
   useEffect(() => {
     setActiveMode("view");
   }, [selectedDate]);
+
+  // Sync with prop values when they change
+  useEffect(() => {
+    setLocalStock(stock);
+  }, [stock]);
+
+  useEffect(() => {
+    setLocalIncome(todayIncomeVal);
+  }, [todayIncomeVal]);
+
+  useEffect(() => {
+    setLocalExpense(todayExpenseVal);
+  }, [todayExpenseVal]);
+
+  // Debounce saving in view mode
+  useEffect(() => {
+    if (activeMode !== "view") return;
+
+    const propIncome = todayIncomeEntry ? todayIncomeEntry.value : 0;
+    const propExpense = todayExpenseEntry ? todayExpenseEntry.value : 0;
+
+    const incomeChanged = localIncome !== propIncome;
+    const expenseChanged = localExpense !== propExpense;
+
+    if (!incomeChanged && !expenseChanged) return;
+
+    const timer = setTimeout(async () => {
+      if (incomeChanged) {
+        await onSave({
+          value: localIncome,
+          note: todayIncomeEntry?.note || "",
+          type: "income",
+        });
+      }
+      if (expenseChanged) {
+        await onSave({
+          value: localExpense,
+          note: todayExpenseEntry?.note || "",
+          type: "expense",
+          reason: todayExpenseEntry?.reason || "spotreba",
+        });
+      }
+    }, 600); // 600ms debounce
+
+    return () => clearTimeout(timer);
+  }, [localIncome, localExpense, todayIncomeVal, todayExpenseVal, activeMode, onSave, todayIncomeEntry, todayExpenseEntry]);
 
   // Load existing values when entering logger mode
   const enterMode = (mode: "income" | "expense") => {
@@ -78,9 +132,6 @@ export default function HeroLoggerCard({
     setActiveMode("view");
   };
 
-  const todayIncomeVal = todayIncomeEntry ? todayIncomeEntry.value : 0;
-  const todayExpenseVal = todayExpenseEntry ? todayExpenseEntry.value : 0;
-
   return (
     <Card className="relative overflow-hidden transition-all duration-500 ease-in-out border-0 w-full bg-bg-surface shadow-none rounded-3xl">
       <CardContent className="p-6 sm:p-8">
@@ -96,7 +147,7 @@ export default function HeroLoggerCard({
             <div className="font-nunito text-7xl sm:text-8xl font-extrabold text-accent-primary tracking-tighter flex items-center justify-center select-none gap-4">
               <img src="/egg.png" alt="Vajce" className="h-16 w-16 sm:h-20 sm:w-20 object-contain drop-shadow-none opacity-90" />
               <div className="flex items-baseline">
-                {stock}
+                {localStock}
                 <span className="text-2xl font-medium font-inter text-text-muted ml-2 lowercase">
                   ks
                 </span>
@@ -106,18 +157,42 @@ export default function HeroLoggerCard({
             {/* Egg Tray Visualizer */}
             {activeModuleId === "vajcia" && (
               <div className="mt-4 w-full">
-                <EggTrayVisualizer stock={stock} />
+                <EggTrayVisualizer
+                  stock={localStock}
+                  onAddEgg={() => {
+                    if (localExpense > 0) {
+                      const nextVal = Math.max(0, localExpense - 1);
+                      setLocalExpense(nextVal);
+                      setLocalStock((prev) => prev + 1);
+                    } else {
+                      const nextVal = localIncome + 1;
+                      setLocalIncome(nextVal);
+                      setLocalStock((prev) => prev + 1);
+                    }
+                  }}
+                  onRemoveEgg={() => {
+                    if (localIncome > 0) {
+                      const nextVal = Math.max(0, localIncome - 1);
+                      setLocalIncome(nextVal);
+                      setLocalStock((prev) => prev - 1);
+                    } else {
+                      const nextVal = localExpense + 1;
+                      setLocalExpense(nextVal);
+                      setLocalStock((prev) => prev - 1);
+                    }
+                  }}
+                />
               </div>
             )}
 
             {/* Daily summary info */}
             <div className="mt-4 flex flex-col sm:flex-row gap-2 sm:gap-6 text-sm font-semibold text-text-muted">
               <div>
-                Dnes znáška: <span className="text-accent-primary font-bold">+{todayIncomeVal} ks</span>
+                Dnes znáška: <span className="text-accent-primary font-bold">+{localIncome} ks</span>
               </div>
               <div className="hidden sm:block text-border-strong">|</div>
               <div>
-                Dnes výdaj: <span className="text-accent-warm font-bold">-{todayExpenseVal} ks</span>
+                Dnes výdaj: <span className="text-accent-warm font-bold">-{localExpense} ks</span>
               </div>
             </div>
 
@@ -165,7 +240,21 @@ export default function HeroLoggerCard({
               <div className="mb-5 w-full">
                 <EggTrayVisualizer
                   stock={stock}
-                  previewStock={activeMode === "income" ? stock + value : Math.max(0, stock - value)}
+                  previewStock={
+                    activeMode === "income"
+                      ? stock - todayIncomeVal + value
+                      : Math.max(0, stock + todayExpenseVal - value)
+                  }
+                  onAddEgg={
+                    activeMode === "income"
+                      ? () => setValue((prev) => prev + 1)
+                      : () => setValue((prev) => Math.max(0, prev - 1))
+                  }
+                  onRemoveEgg={
+                    activeMode === "income"
+                      ? () => setValue((prev) => Math.max(0, prev - 1))
+                      : () => setValue((prev) => prev + 1)
+                  }
                 />
               </div>
             )}

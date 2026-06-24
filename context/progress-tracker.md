@@ -13,11 +13,22 @@ Pripraviť nasadenie a pokračovať na mobilnej aplikácii (Expo) so zdieľanou 
 
 ## Hotové (Completed)
 
+- **Interaktívne funkcie a prepojenia na Prehľade (2026-06-24)**:
+  - Pridali sme možnosť kliknutím na prázdne/plné miesto na vizualizéri plata vajíčok (`EggTrayVisualizer.tsx`) priamo pridať alebo odobrať vajíčko (+1 / -1) v reálnom čase. Implementovali sme plnohodnotné **optimistické aktualizácie rozhrania (UI)** so **600ms debouncingom** na pozadí, čo zaisťuje okamžitú odozvu bez akéhokoľvek sieťového oneskorenia alebo preblikávania.
+  - Sprevádzkovali sme inteligentné symetrické upravovanie skladu pri kliknutí na vajíčka: ak chcem ubrať vajíčko a dnešný príjem je 0, systém automaticky zvýši dnešný výdaj (a naopak), čím stav skladu klesne/stúpne korektne za každých okolností.
+  - Prepojili sme body na 7-dňovom grafe znášky priamo s mesačným kalendárom: kliknutie na ľubovoľný deň v grafe automaticky prepne vybraný dátum.
+  - Implementovali sme obojsmerné hover zvýraznenie v sekcii "Stav hejna": prejdenie myšou nad plemenom v zozname stmaví ostatné segmenty v stohovanom grafe a naopak.
+  - Pridali sme dynamický, časovo prispôsobený pozdrav na vrchu dashboardu (napr. Dobré ráno, Dobré popoludnie, Dobrý večer) podľa aktuálneho času.
+  - Na základe spätnej väzby sme odstránili nepotrebný štítok "Prehľad farmy" nad pozdravom a zväčšili sme vertikálnu medzeru a výšku riadku pod pozdravom (`pt-3 pb-1`, `leading-snug`, `sm:text-3xl`) pre vzdušnejší, väčší a čistejší vzhľad.
+  - Skryli sme prepínacie taby modulov (Sliepky vs. Záhrada) v Prehľade aj Denníku, keďže momentálne je aktívny iba modul Sliepky a Záhrada je plánovaná pre V2.
 - **Optimalizácia a animácia zásobníka na vajcia (2026-06-24)**:
-  - Refaktorovali sme `EggTrayVisualizer.tsx` tak, aby vykresľoval iba jedno balenie (30ks) naraz, s možnosťou listovania (`◀ Balenie X z Y ▶`). Týmto sme zredukovali počet DOM prvkov na stabilných cca 60, čo zaručuje okamžité načítanie a nulový lag na slabších telefónoch.
-  - Vizuálny zásobník zostáva viditeľný aj počas zapisovania znášky/výdaja v `HeroLoggerCard.tsx` a zobrazuje náhľad stavu v reálnom čase (preview) s jemným pulzovaním neuložených vajíčok.
-  - Pridali sme responzívne CSS animácie (bouncy pružinový efekt cez cubic-bezier pri zväčšení/zmenšení) pre plynulé ukladanie a odoberanie vajíčok.
-  - Implementovali sme syntetizátor zvukov cez natívne Web Audio API (žiadne sťahovanie veľkých `.mp3` súborov) — pri pridaní zaznie jemný vysoký pop, pri odobraní klesajúci tlmený zvuk.
+  - Refaktorovali sme `EggTrayVisualizer.tsx` tak, aby vykresľoval iba jedno balenie (30ks) naraz s listovaním (`◀ Balenie X z Y ▶`). Tým sme zredukovali počet DOM prvkov na cca 60 pre maximálny výkon na telefónoch.
+  - Prepojili sme vizuál v reálnom čase s formulárom `HeroLoggerCard.tsx` s presným výpočtom `previewStock` pri úprave (odčítava sa už uložená hodnota, čím sme zamedzili dvojitému započítaniu).
+  - Zaviedli sme jasné vizuálne odlíšenie bez agresívneho blikania:
+    - **Pridávané vajíčka** sú vykreslené ako normálne vajíčka, ale ich **pohárik (cup) v mriežke sa sfarbí na jemnozeleno**.
+    - **Odoberané vajíčka** zmiznú, pričom ich **pohárik sa sfarbí na jemnoružovo a zobrazí sa v ňom čiarkovaný (ghost) obrys** pôvodného vajíčka.
+  - Pridali sme plynulé a pružiace CSS animácie (`ease-[cubic-bezier(0.34,1.56,0.64,1)]`) a zvukové efekty (pop) generované cez Web Audio API.
+  - Implementovali sme tlačidlo stíšenia zvukov (reproduktor v hlavičke, ukladá sa do `localStorage`) a haptickú odozvu (jemnú vibráciu na mobiloch).
 - **Vizuálny redizajn bento kariet & Kalendár bez layout shiftov (2026-06-22)**:
   - Odstránili sme layout shift v kalendári (`MonthlyCalendar.tsx`) — aktívny deň už nemení veľkosť písma (`text-xs` zostáva zachovaný) a prechody sa namiesto `ring` prepínajú cez stabilný `box-shadow`.
   - Presunuli sme bento karty na prehľade (Mesačný kalendár, Týždenný vývoj, Stav hejna) na čisté svetlé pozadie `bg-bg-surface border border-border-default/30 shadow-none` pre prémiový vzhľad.

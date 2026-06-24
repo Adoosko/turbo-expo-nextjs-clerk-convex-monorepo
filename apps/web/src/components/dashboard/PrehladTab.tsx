@@ -9,7 +9,6 @@ import { cn } from "@/lib/utils";
 import React from "react";
 import HeroLoggerCard from "./HeroLoggerCard";
 import MonthlyCalendar from "./MonthlyCalendar";
-import ModuleSelector from "./ModuleSelector";
 import { Entry, Chicken, DashboardData, EntryType, ExpenseReason } from "@/lib/types";
 import {
   formatDateSlovakFull,
@@ -60,6 +59,16 @@ export default function PrehladTab({
   errorMsg,
   handleSave,
 }: PrehladTabProps) {
+  // Interactive hover and time-of-day greeting states
+  const [hoveredBreedId, setHoveredBreedId] = React.useState<string | null>(null);
+
+  const greeting = React.useMemo(() => {
+    const hour = new Date().getHours();
+    if (hour < 9) return "Dobré ráno! Sliepky už znášajú... ☀️";
+    if (hour < 18) return "Pekný deň na farme Finik! 🍀";
+    return "Dobrý večer! Nezabudnite zatvoriť kurník... 🌙";
+  }, []);
+
   // Calculations
   const totalChickens = chickens ? chickens.reduce((sum, c) => sum + (c.count || 0), 0) : 0;
   const totalHens = chickens
@@ -154,7 +163,7 @@ export default function PrehladTab({
     const coordinates = sparklineData.map((d, i) => {
       const x = i * xStep;
       const y = height - 12 - (d.value / maxVal) * (height - 24);
-      return { x, y, value: d.value };
+      return { x, y, value: d.value, date: d.date };
     });
 
     const points = coordinates
@@ -173,8 +182,12 @@ export default function PrehladTab({
 
   return (
     <div className="flex flex-col gap-6">
-      {/* Modular Modules Selector */}
-      <ModuleSelector activeModuleId={activeModuleId} setActiveModuleId={setActiveModuleId} />
+      {/* Greeting Header */}
+      <div className="flex flex-col pl-1 select-none pt-3 pb-1">
+        <h1 className="font-nunito text-2xl sm:text-3xl font-extrabold text-text-primary leading-snug tracking-tight">
+          {greeting}
+        </h1>
+      </div>
 
       {/* Hero Action Area */}
       <div className="w-full">
@@ -305,7 +318,11 @@ export default function PrehladTab({
                       />
                     )}
                     {sparkline.data.map((pt, i) => (
-                      <g key={i} className="group/pt">
+                      <g
+                        key={i}
+                        className="group/pt cursor-pointer"
+                        onClick={() => setSelectedDate(pt.date)}
+                      >
                         <circle
                           cx={pt.x}
                           cy={pt.y}
@@ -396,6 +413,9 @@ export default function PrehladTab({
                     {activeBreeds.map((breed) => {
                       const info = getChickenDetails(breed);
                       const pct = totalChickens > 0 ? (breed.count / totalChickens) * 100 : 0;
+                      const isHovered = hoveredBreedId === breed._id;
+                      const isDimmed = hoveredBreedId !== null && !isHovered;
+
                       return (
                         <div
                           key={breed._id}
@@ -403,8 +423,14 @@ export default function PrehladTab({
                             width: `${pct}%`,
                             backgroundImage: `linear-gradient(to bottom, rgba(255,255,255,0.4) 0%, rgba(255,255,255,0) 40%, rgba(0,0,0,0.1) 100%), linear-gradient(to right, ${info.color || "var(--accent-primary)"}, ${info.color || "var(--accent-primary)"})`,
                           }}
+                          onMouseEnter={() => setHoveredBreedId(breed._id)}
+                          onMouseLeave={() => setHoveredBreedId(null)}
                           title={`${info.name}: ${breed.count} ks (${Math.round(pct)}%)`}
-                          className="h-full transition-all duration-300 hover:brightness-110 border-r border-[#00000020] last:border-r-0 cursor-pointer shadow-[inset_0_1px_1px_rgba(255,255,255,0.6)]"
+                          className={cn(
+                            "h-full transition-all duration-300 border-r border-[#00000020] last:border-r-0 cursor-pointer shadow-[inset_0_1px_1px_rgba(255,255,255,0.6)]",
+                            isHovered && "brightness-110 saturate-105",
+                            isDimmed && "opacity-35"
+                          )}
                         />
                       );
                     })}
@@ -414,10 +440,19 @@ export default function PrehladTab({
                   <div className="flex flex-wrap gap-2.5 mt-1">
                     {activeBreeds.map((breed) => {
                       const info = getChickenDetails(breed);
+                      const isHovered = hoveredBreedId === breed._id;
+                      const isDimmed = hoveredBreedId !== null && !isHovered;
+
                       return (
                         <div
                           key={breed._id}
-                          className="flex items-center gap-2.5 pl-1.5 pr-3.5 py-1.5 rounded-xl bg-gradient-to-b from-[#F9F7F4] to-[#EAE2D4] text-xs font-semibold text-text-primary shadow-[0_2px_4px_-1px_rgba(0,0,0,0.15)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_4px_6px_-1px_rgba(0,0,0,0.15)] select-none relative overflow-hidden"
+                          onMouseEnter={() => setHoveredBreedId(breed._id)}
+                          onMouseLeave={() => setHoveredBreedId(null)}
+                          className={cn(
+                            "flex items-center gap-2.5 pl-1.5 pr-3.5 py-1.5 rounded-xl bg-gradient-to-b from-[#F9F7F4] to-[#EAE2D4] text-xs font-semibold text-text-primary shadow-[0_2px_4px_-1px_rgba(0,0,0,0.15)] transition-all duration-300 select-none relative overflow-hidden",
+                            isHovered && "-translate-y-0.5 shadow-md scale-102 ring-2 ring-accent-primary ring-offset-2 ring-offset-bg-surface bg-gradient-to-b from-white to-[#F6EFE2] z-10",
+                            isDimmed && "opacity-45 scale-98"
+                          )}
                         >
                           <div className="absolute left-0 top-0 bottom-0 w-[4px]" style={{ backgroundColor: info.color || "var(--accent-primary)" }} />
                           <img
